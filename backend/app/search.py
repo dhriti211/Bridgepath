@@ -19,7 +19,7 @@ CACHE_TTL_SECONDS = 7 * 24 * 3600
 # Sites we trust most for licensing rules; results from these rank first.
 _TRUSTED_SUFFIXES = (".gov", ".us", ".edu")
 _TRUSTED_DOMAINS = (
-    "ncsbn.org", "cgfns.org", "nursys.com", "ncees.org", "wes.org", "ece.org",
+    "ncsbn.org", "cgfns.org", "trumerit.org", "nursys.com", "ncees.org", "wes.org", "ece.org",
     "ets.org", "ielts.org", "nasdtec.net", "naces.org", "nclex.com", "pearsonvue.com",
     # Official rule text republished by legal databases
     "law.cornell.edu", "regulations.justia.com", "law.justia.com",
