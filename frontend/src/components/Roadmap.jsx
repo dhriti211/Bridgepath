@@ -55,12 +55,18 @@ export default function Roadmap({ roadmap, profile }) {
                   </div>
                 )}
                 <div className="mt-3 text-xs">
-                  {s.verified ? (
+                  {s.official ? (
                     <a href={s.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-brand hover:underline">
-                      ✓ Source: {hostOf(s.source_url)}
+                      ✓ Official source: {hostOf(s.source_url)}
                     </a>
+                  ) : s.verified ? (
+                    <span className="text-accent">
+                      Unofficial source:{' '}
+                      <a href={s.source_url} target="_blank" rel="noreferrer" className="underline">{hostOf(s.source_url)}</a>
+                      . Double-check with the state board.
+                    </span>
                   ) : (
-                    <span className="text-accent">No official source found for this step. Confirm with the state board.</span>
+                    <span className="text-accent">No source found for this step. Confirm with the state board.</span>
                   )}
                 </div>
               </div>
@@ -103,7 +109,7 @@ export default function Roadmap({ roadmap, profile }) {
             {roadmap.sources.map((s) => (
               <li key={s.url}>
                 <a href={s.url} target="_blank" rel="noreferrer" className="text-brand hover:underline">{s.title || s.url}</a>
-                <span className="text-muted"> · {hostOf(s.url)}</span>
+                <span className="text-muted"> · {hostOf(s.url)}{s.official ? ' · official' : ''}</span>
               </li>
             ))}
           </ul>

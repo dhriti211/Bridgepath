@@ -31,6 +31,7 @@ class Profile(BaseModel):
     english_test: str = ""
     specialties: list[str] = []
     licenses_held: list[str] = []
+    notes: str = Field("", description="Copied verbatim from the form; never invented")
     summary: str = ""
 
 
@@ -45,6 +46,7 @@ class Source(BaseModel):
     title: str
     url: str
     snippet: str = ""
+    official: bool = False
 
 
 class Requirement(BaseModel):
@@ -64,7 +66,8 @@ class Step(BaseModel):
     depends_on: list[str] = []
     documents: list[str] = []
     source_url: str = ""
-    verified: bool = False
+    verified: bool = False  # link came from real search results
+    official: bool = False  # and that link is a government or official exam/evaluation body
 
 
 class BridgeJob(BaseModel):

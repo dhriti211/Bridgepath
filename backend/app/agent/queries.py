@@ -9,14 +9,16 @@ from ..models import Profile
 _QUERIES = {
     "nurse": [
         "{state} board of nursing licensure requirements internationally educated nurses",
+        "{state} administrative code registered nurse licensure by examination international graduate",
+        "nclex.com NCLEX registration fees international scheduling fee",
         "CGFNS credentials evaluation report requirements for {state} registered nurse license",
         "NCLEX-RN registration fee and requirements for international applicants",
         "English proficiency test requirements internationally educated nurses {state}",
         "{state} bridge or refresher program for internationally educated nurses",
-        "visa screen certificate for foreign nurses requirements and cost",
     ],
     "engineer": [
         "{state} board of technical registration professional engineer license foreign degree",
+        "{state} administrative code professional engineer registration foreign education evaluation",
         "NCEES credentials evaluation for engineers with degrees from {country}",
         "NCEES FE exam registration fee and eligibility",
         "{state} PE license experience requirements and PE exam",
@@ -25,6 +27,7 @@ _QUERIES = {
     ],
     "teacher": [
         "{state} department of education teaching certificate requirements foreign credentials",
+        "{state} administrative code teacher certification foreign degree evaluation",
         "foreign transcript evaluation for {state} teacher certification approved agencies",
         "{state} teacher certification exams required and fees",
         "{state} alternative teacher certification pathway for career changers",

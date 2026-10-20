@@ -20,7 +20,9 @@ CACHE_TTL_SECONDS = 7 * 24 * 3600
 _TRUSTED_SUFFIXES = (".gov", ".us", ".edu")
 _TRUSTED_DOMAINS = (
     "ncsbn.org", "cgfns.org", "nursys.com", "ncees.org", "wes.org", "ece.org",
-    "ets.org", "ielts.org", "nasdtec.net", "naces.org",
+    "ets.org", "ielts.org", "nasdtec.net", "naces.org", "nclex.com", "pearsonvue.com",
+    # Official rule text republished by legal databases
+    "law.cornell.edu", "regulations.justia.com", "law.justia.com",
 )
 
 
@@ -54,8 +56,8 @@ class Search:
                 for r in resp.get("results", [])
             ]
             self._put(query, cached)
-        sources = [Source(**r) for r in cached]
-        sources.sort(key=lambda s: not is_trusted(s.url))
+        sources = [Source(**r, official=is_trusted(r["url"])) for r in cached]
+        sources.sort(key=lambda s: not s.official)
         return sources
 
 

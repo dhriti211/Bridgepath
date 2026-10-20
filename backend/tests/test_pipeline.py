@@ -53,7 +53,7 @@ class FakeSearch:
 def test_pipeline_end_to_end():
     agent = Agent(ScriptedLLM(), FakeSearch())
     form = IntakeForm(profession="nurse", country="Philippines", degree="BSc Nursing",
-                      target_state="AZ", years_experience=5)
+                      target_state="AZ", years_experience=5, notes="family visa")
 
     async def collect():
         return [e async for e in agent.run(form)]
@@ -65,10 +65,14 @@ def test_pipeline_end_to_end():
     assert roadmap["us_equivalent"] == "BSN"
     # Real link kept and verified; invented link dropped.
     assert roadmap["steps"][0]["verified"] and roadmap["steps"][0]["source_url"] == URL
+    assert roadmap["steps"][0]["official"]
     assert not roadmap["steps"][1]["verified"] and roadmap["steps"][1]["source_url"] == ""
     assert roadmap["total_cost_usd_min"] == 600
     assert (roadmap["total_weeks_min"], roadmap["total_weeks_max"]) == (14, 22)
     assert any(e["type"] == "sources" for e in events)
+    # Form facts win over anything the intake model wrote.
+    profile = next(e["profile"] for e in events if e["type"] == "profile")
+    assert profile["years_experience"] == 5 and profile["notes"] == "family visa"
 
 
 def test_critical_path_parallel_and_cycles():
@@ -101,3 +105,14 @@ def test_extract_json(text):
 def test_strip_thinking():
     assert strip_thinking("<think>x</think> hi") == "hi"
     assert strip_thinking("reasoning...</think>answer") == "answer"
+
+
+def test_official_flag_only_for_official_sites():
+    plan = PlanOut(headline="h", steps=[
+        Step(id="s1", title="t", description="d", source_url=URL),
+        Step(id="s2", title="t", description="d", source_url="https://www.archerreview.com/x")])
+    eq = Equivalency(us_equivalent="BSN", evaluation_service="CGFNS", evaluation_reason="r")
+    sources = {u: Source(title="a", url=u) for u in (URL, "https://www.archerreview.com/x")}
+    rm = finalize(plan, eq, sources)
+    assert [s.official for s in rm.steps] == [True, False]
+    assert all(s.verified for s in rm.steps)
