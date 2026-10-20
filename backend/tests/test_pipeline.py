@@ -116,3 +116,10 @@ def test_official_flag_only_for_official_sites():
     rm = finalize(plan, eq, sources)
     assert [s.official for s in rm.steps] == [True, False]
     assert all(s.verified for s in rm.steps)
+
+
+def test_university_pages_are_not_official():
+    from app.search import is_trusted
+    assert not is_trusted("https://kb.astate.edu/books/school-of-nursing/page/x")
+    assert is_trusted("https://www.azbn.gov/licensure")
+    assert is_trusted("https://www.trumerit.org/licensure/arizona")

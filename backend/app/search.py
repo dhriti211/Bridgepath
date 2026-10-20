@@ -17,7 +17,9 @@ from .models import Source
 CACHE_TTL_SECONDS = 7 * 24 * 3600
 
 # Sites we trust most for licensing rules; results from these rank first.
-_TRUSTED_SUFFIXES = (".gov", ".us", ".edu")
+# Universities (.edu) are left out: their pages describe their own admission rules,
+# not state licensing rules.
+_TRUSTED_SUFFIXES = (".gov", ".us")
 _TRUSTED_DOMAINS = (
     "ncsbn.org", "cgfns.org", "trumerit.org", "nursys.com", "ncees.org", "wes.org", "ece.org",
     "ets.org", "ielts.org", "nasdtec.net", "naces.org", "nclex.com", "pearsonvue.com",
