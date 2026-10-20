@@ -4,6 +4,8 @@ export const PROFESSIONS = [
   { value: 'teacher', label: 'K-12 Teacher' },
 ]
 
+export const ENGLISH_TESTS = ['IELTS Academic', 'TOEFL iBT', 'OET', 'PTE Academic', 'Duolingo English Test']
+
 export const STATES = [
   'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
   'Delaware', 'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois',
@@ -21,7 +23,7 @@ export const EXAMPLES = [
     label: 'Nurse from the Philippines → Arizona',
     form: {
       profession: 'nurse', country: 'Philippines', degree: 'Bachelor of Science in Nursing',
-      years_experience: 6, target_state: 'Arizona', english_test: 'IELTS 7.0',
+      years_experience: 6, target_state: 'Arizona', english_test_type: 'IELTS Academic', english_test_score: '7.0',
       notes: 'ICU nurse in Manila. Moved to Phoenix on a family visa, working as a caregiver.',
     },
   },
@@ -29,7 +31,7 @@ export const EXAMPLES = [
     label: 'Civil engineer from India → Texas',
     form: {
       profession: 'engineer', country: 'India', degree: 'B.Tech Civil Engineering',
-      years_experience: 8, target_state: 'Texas', english_test: '',
+      years_experience: 8, target_state: 'Texas', english_test_type: '', english_test_score: '',
       notes: 'Structural design for highway bridges. Green card holder, currently driving rideshare.',
     },
   },
@@ -37,7 +39,7 @@ export const EXAMPLES = [
     label: 'Teacher from Mexico → California',
     form: {
       profession: 'teacher', country: 'Mexico', degree: 'Licenciatura en Educación Primaria',
-      years_experience: 10, target_state: 'California', english_test: 'TOEFL 95',
+      years_experience: 10, target_state: 'California', english_test_type: 'TOEFL iBT', english_test_score: '95',
       notes: 'Elementary teacher, bilingual Spanish/English. Working as a teaching aide.',
     },
   },

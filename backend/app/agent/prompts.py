@@ -48,6 +48,8 @@ Rules:
   them (and say why), and only add fees that apply (e.g. no international scheduling fee
   for someone testing in the US).
 - Never state an expiry, validity period or deadline unless a requirement says so.
+- If the English test value is missing or unclear, treat it as unknown (never as a score of
+  0) and say which tests and minimum scores the state accepts.
 - Keep each duration range realistic and tight: the max should be at most about 3 times
   the min. If the real wait varies widely, use the typical range and explain the outliers
   in the description.

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { EXAMPLES, PROFESSIONS, STATES } from '../data'
+import { ENGLISH_TESTS, EXAMPLES, PROFESSIONS, STATES } from '../data'
 
 const EMPTY = {
   profession: 'nurse', country: '', degree: '', years_experience: 0,
-  target_state: 'Arizona', english_test: '', notes: '',
+  target_state: 'Arizona', english_test_type: '', english_test_score: '', notes: '',
 }
 
 const input =
@@ -17,7 +17,9 @@ export default function IntakeForm({ onSubmit }) {
   function submit(e) {
     e.preventDefault()
     const data = new FormData()
-    Object.entries(form).forEach(([k, v]) => data.append(k, v))
+    const { english_test_type: type, english_test_score: score, ...rest } = form
+    Object.entries(rest).forEach(([k, v]) => data.append(k, v))
+    data.append('english_test', type ? `${type}${score ? ` score ${score}` : ' (score not given)'}` : 'none taken yet')
     if (cv) data.append('cv', cv)
     onSubmit(data, form)
   }
@@ -57,7 +59,16 @@ export default function IntakeForm({ onSubmit }) {
           <input type="number" min="0" max="60" className={input} value={form.years_experience} onChange={set('years_experience')} />
         </Field>
         <Field label="English test (if any)">
-          <input className={input} value={form.english_test} onChange={set('english_test')} placeholder="e.g. IELTS 7.0, or none yet" />
+          <div className="flex gap-2">
+            <select className={input} value={form.english_test_type} onChange={set('english_test_type')}>
+              <option value="">None yet</option>
+              {ENGLISH_TESTS.map((t) => <option key={t}>{t}</option>)}
+            </select>
+            {form.english_test_type && (
+              <input className={`${input} w-28`} inputMode="decimal" value={form.english_test_score}
+                onChange={set('english_test_score')} placeholder="Score" aria-label="Overall score" />
+            )}
+          </div>
         </Field>
       </div>
 
