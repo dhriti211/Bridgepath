@@ -29,7 +29,8 @@ and set `source_url` to the URL that supports each one.
   record it as one requirement listing the options, not as separate requirements.
 - Note conditions: a requirement that applies only in some cases (e.g. English tests only
   when the education was not in English, extra fees only when testing abroad) must say so.
-- Ignore results about other states or professions."""
+- Ignore results about other states or professions, and ignore a school's or employer's
+  own admission or hiring requirements: only licensing rules count."""
 
 PLAN = """You are a career pathway planner for internationally educated professionals. Using
 the profile, the equivalency estimate and the researched requirements, build an ordered,
