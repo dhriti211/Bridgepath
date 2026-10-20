@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from ..llm import LLM
 from ..models import (BridgeJob, Equivalency, IntakeForm, Profile, Requirement,
                       Roadmap, Source, Step)
-from ..search import Search
+from ..search import Search, is_trusted
 from . import prompts
 from .queries import research_queries
 
@@ -100,8 +100,10 @@ class Agent:
         # 6. Verification (deterministic): every link must come from real search results.
         yield step("verify", "running", "Checking every step against its source")
         roadmap = finalize(plan, equivalency, all_sources)
+        official = sum(s.official for s in roadmap.steps)
         verified = sum(s.verified for s in roadmap.steps)
-        yield step("verify", "done", f"{verified} of {len(roadmap.steps)} steps backed by a source")
+        yield step("verify", "done", f"{official} of {len(roadmap.steps)} steps backed by an official "
+                   f"source, {verified - official} by other sites")
 
         yield {"type": "roadmap", "roadmap": roadmap.model_dump()}
 
@@ -109,7 +111,13 @@ class Agent:
         user = "Form:\n" + form.model_dump_json(indent=2)
         if cv_text.strip():
             user += "\n\nCV / transcript text:\n" + cv_text[:8000]
-        return await self.llm.chat_json("fast", prompts.INTAKE, user, Profile)
+        profile = await self.llm.chat_json("fast", prompts.INTAKE, user, Profile)
+        # The form is the source of truth; the model only adds structure from the CV.
+        return profile.model_copy(update={
+            "profession": form.profession, "country": form.country, "degree": form.degree,
+            "years_experience": form.years_experience, "english_test": form.english_test,
+            "notes": form.notes,
+        })
 
     async def equivalency(self, profile: Profile) -> Equivalency:
         return await self.llm.chat_json("reasoning", prompts.EQUIVALENCY,
@@ -118,7 +126,8 @@ class Agent:
     async def synthesize(self, profile: Profile, sources: list[Source]) -> list[Requirement]:
         picked = sources[:MAX_SOURCES_FOR_SYNTHESIS]
         docs = "\n\n".join(
-            f"[{i + 1}] {s.title}\nURL: {s.url}\n{s.snippet[:SNIPPET_CHARS]}"
+            f"[{i + 1}] [{'OFFICIAL' if s.official else 'THIRD-PARTY'}] {s.title}\n"
+            f"URL: {s.url}\n{s.snippet[:SNIPPET_CHARS]}"
             for i, s in enumerate(picked)
         )
         user = f"Profile:\n{profile.model_dump_json(indent=2)}\n\nSearch results:\n{docs}"
@@ -142,7 +151,8 @@ def finalize(plan: PlanOut, equivalency: Equivalency, sources: dict[str, Source]
     for s in plan.steps:
         url = s.source_url.strip()
         ok = bool(url) and url.rstrip("/") in known
-        steps.append(s.model_copy(update={"source_url": url if ok else "", "verified": ok}))
+        steps.append(s.model_copy(update={"source_url": url if ok else "", "verified": ok,
+                                          "official": ok and is_trusted(url)}))
 
     weeks_min, weeks_max = critical_path(steps)
     cited = {s.source_url.rstrip("/") for s in steps if s.source_url}
