@@ -11,7 +11,7 @@ import logging
 import re
 from typing import Literal, TypeVar
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, BadRequestError
 from pydantic import BaseModel, ValidationError
 
 from . import config
@@ -23,6 +23,11 @@ T = TypeVar("T", bound=BaseModel)
 
 # Substrings used to find each tier in the Token Factory model list.
 _TIER_HINTS: dict[Tier, str] = {"fast": "nano", "medium": "super", "reasoning": "ultra"}
+# Specialized variants (vision, embeddings, safety...) are only used if nothing else matches.
+_SPECIALIZED = {"vl", "omni", "embed", "embedding", "reward", "guard", "safety", "parse", "retriever"}
+# Reasoning ("thinking") is on only for the tier that needs it; it costs tokens and time.
+_THINKING: dict[Tier, bool] = {"fast": False, "medium": False, "reasoning": True}
+_MAX_TOKENS: dict[Tier, int] = {"fast": 4096, "medium": 8192, "reasoning": 16384}
 # If a tier's model is missing, fall back along this order.
 _FALLBACK: dict[Tier, list[Tier]] = {
     "fast": ["fast", "medium", "reasoning"],
@@ -46,6 +51,7 @@ class LLM:
             if m
         }
         self._resolved = len(self._models) == 3
+        self._template_kwargs_ok = True
 
     async def resolve_models(self) -> dict[Tier, str]:
         """Pick Nemotron 3 models from the live model list for any tier not set in env."""
@@ -58,8 +64,8 @@ class LLM:
             if tier in self._models:
                 continue
             matches = [i for i in nemotron if hint in i.lower()]
-            # Prefer the newest family (Nemotron 3) when several match.
-            matches.sort(key=lambda i: ("nemotron-3" not in i.lower(), len(i)))
+            # Prefer general chat models, then the Nemotron 3 family, then the shortest name.
+            matches.sort(key=lambda i: (is_specialized(i), "nemotron-3" not in i.lower(), len(i)))
             if matches:
                 self._models[tier] = matches[0]
         if not self._models:
@@ -76,12 +82,28 @@ class LLM:
         raise RuntimeError("No model available")
 
     async def chat(self, tier: Tier, messages: list[dict], temperature: float = 0.2,
-                   max_tokens: int = 4096) -> str:
+                   max_tokens: int | None = None) -> str:
         model = await self.model_for(tier)
-        resp = await self.client.chat.completions.create(
-            model=model, messages=messages, temperature=temperature, max_tokens=max_tokens
-        )
-        return strip_thinking(resp.choices[0].message.content or "")
+        kwargs = dict(model=model, messages=messages, temperature=temperature,
+                      max_tokens=max_tokens or _MAX_TOKENS[tier])
+        if self._template_kwargs_ok:
+            try:
+                resp = await self.client.chat.completions.create(
+                    **kwargs,
+                    extra_body={"chat_template_kwargs": {"enable_thinking": _THINKING[tier]}},
+                )
+            except BadRequestError:
+                # This model or endpoint does not accept the thinking switch; stop sending it.
+                self._template_kwargs_ok = False
+                resp = await self.client.chat.completions.create(**kwargs)
+        else:
+            resp = await self.client.chat.completions.create(**kwargs)
+        choice = resp.choices[0]
+        text = strip_thinking(choice.message.content or "")
+        if not text:
+            raise RuntimeError(f"{model} returned an empty answer (finish_reason={choice.finish_reason}); "
+                               "it may have spent its token budget reasoning")
+        return text
 
     async def chat_json(self, tier: Tier, system: str, user: str, schema: type[T],
                         retries: int = 1) -> T:
@@ -104,6 +126,10 @@ class LLM:
                      "Reply again with only the corrected JSON object."},
                 ]
         raise ValueError(f"Model did not return valid JSON: {last_err}")
+
+
+def is_specialized(model_id: str) -> bool:
+    return bool(set(re.split(r"[-_/.]", model_id.lower())) & _SPECIALIZED)
 
 
 def strip_thinking(text: str) -> str:

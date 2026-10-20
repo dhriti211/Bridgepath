@@ -25,13 +25,18 @@ async def main() -> int:
         return 1
 
     llm = LLM()
+    page = await llm.client.models.list()
+    available = sorted(m.id for m in page.data if "nemotron" in m.id.lower())
+    print("✓ Token Factory reachable. Nemotron models on your account:")
+    for model_id in available:
+        print(f"    {model_id}")
     models = await llm.resolve_models()
-    print("✓ Token Factory reachable. Nemotron models:")
+    print("✓ Bridgepath will use:")
     for tier, model in models.items():
         print(f"    {tier:<10} {model}")
-    reply = await llm.chat("fast", [{"role": "user", "content": "Reply with the word ready."}],
-                           max_tokens=20)
-    print(f"✓ Nemotron replied: {reply!r}")
+    for tier in ("fast", "medium", "reasoning"):
+        reply = await llm.chat(tier, [{"role": "user", "content": "Reply with the word ready."}])
+        print(f"✓ {tier} model replied: {reply[:60]!r}")
 
     from tavily import TavilyClient
     res = TavilyClient(api_key=config.TAVILY_API_KEY).search("Arizona State Board of Nursing",
