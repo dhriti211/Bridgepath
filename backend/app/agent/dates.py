@@ -30,7 +30,9 @@ def student_deadlines(profile: StudentProfile, today: date | None = None) -> lis
             start=(end - timedelta(days=90)).isoformat(),
             end=(end + timedelta(days=60)).isoformat(),
             detail="USCIS must receive your Form I-765 between 90 days before and 60 days after "
-                   "your program end date, and within 30 days of your DSO recommending OPT in SEVIS.",
+                   "your program end date, and within 30 days of your DSO recommending OPT in SEVIS. "
+                   "You don't need a job offer to apply. Filing early helps, because processing "
+                   "can take months and you can't start work until your EAD start date.",
         ))
         out.append(Deadline(
             label="End of your 60-day grace period",

@@ -120,7 +120,7 @@ export default function Roadmap({ roadmap, profile }) {
           <h3 className="mb-1 font-display text-xl">{student ? 'Employers to target' : 'Work you can do now'}</h3>
           <p className="mb-4 text-sm text-muted">
             {student
-              ? 'Where your odds of sponsorship are better for this goal.'
+              ? 'Where your odds of sponsorship are better for this goal. Pay ranges are rough estimates.'
               : 'Jobs that use your skills and build US experience while you get licensed.'}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
