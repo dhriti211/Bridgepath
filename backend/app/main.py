@@ -1,10 +1,11 @@
 """Bridgepath API: streams the agent's progress and roadmap, answers follow-ups."""
 
+import hashlib
 import io
 import json
 import logging
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
@@ -14,8 +15,10 @@ from . import config
 from .agent import chat
 from .agent.pipeline import Agent
 from .agent.student import StudentAgent
+from .guard import BudgetExceeded, RateLimiter, budget
 from .llm import LLM
 from .models import ChatRequest, IntakeForm, StudentForm, StudentRoadmapRequest
+from .replay import CACHED_MISS, Store, key
 from .search import Search
 
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +26,8 @@ logging.basicConfig(level=logging.INFO)
 app = FastAPI(title="Bridgepath")
 _llm: LLM | None = None
 _search: Search | None = None
+_store: Store | None = None
+_limiter = RateLimiter()
 
 
 def services() -> tuple[LLM, Search]:
@@ -32,14 +37,36 @@ def services() -> tuple[LLM, Search]:
     return _llm, _search
 
 
+def store() -> Store:
+    global _store
+    if _store is None:
+        _store = Store()
+    return _store
+
+
+def rate_limited(request: Request) -> None:
+    """Per-visitor limit on endpoints that can call Nebius or Tavily."""
+    forwarded = request.headers.get("x-forwarded-for", "")
+    ip = forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+    if not _limiter.allow(ip):
+        raise HTTPException(429, "You've made a lot of requests in the last hour. Please wait a bit and try again.")
+
+
+def cv_hash(cv_text: str) -> str:
+    return hashlib.sha256(cv_text.encode()).hexdigest() if cv_text.strip() else ""
+
+
 @app.get("/api/health")
 async def health():
     return {"ok": True, "nebius_key": bool(config.NEBIUS_API_KEY),
-            "tavily_key": bool(config.TAVILY_API_KEY)}
+            "tavily_key": bool(config.TAVILY_API_KEY), "demo_mode": config.DEMO_MODE,
+            "usage": budget().usage()}
 
 
 @app.get("/api/models")
 async def models():
+    if config.DEMO_MODE == "cached":
+        return {}
     llm, _ = services()
     return await llm.resolve_models()
 
@@ -69,6 +96,7 @@ async def roadmap(
     english_test: str = Form(""),
     notes: str = Form(""),
     cv: UploadFile | None = File(None),
+    _: None = Depends(rate_limited),
 ):
     try:
         form = IntakeForm(profession=profession, country=country, degree=degree,
@@ -77,7 +105,8 @@ async def roadmap(
     except ValidationError as e:
         raise HTTPException(422, e.errors(include_url=False))
     cv_text = await read_cv(cv)
-    return sse(Agent(*services()).run(form, cv_text))
+    k = key("license", {"form": form.model_dump(), "cv": cv_hash(cv_text)})
+    return sse(store().events(k, Agent(*services()).run(form, cv_text)))
 
 
 def sse(events) -> StreamingResponse:
@@ -103,6 +132,7 @@ async def student_goals(
     target_state: str = Form("Anywhere in the US"),
     notes: str = Form(""),
     cv: UploadFile | None = File(None),
+    _: None = Depends(rate_limited),
 ):
     try:
         form = StudentForm(degree_level=degree_level, major=major, target_role=target_role,
@@ -112,22 +142,37 @@ async def student_goals(
     except ValidationError as e:
         raise HTTPException(422, e.errors(include_url=False))
     cv_text = await read_cv(cv)
+    k = key("goals", {"form": form.model_dump(), "cv": cv_hash(cv_text)})
+    if (saved := store().get(k)) is not None:
+        return saved
+    if config.DEMO_MODE == "cached":
+        raise HTTPException(429, CACHED_MISS)
     try:
         profile, goals = await StudentAgent(*services()).goals(form, cv_text)
+    except BudgetExceeded as e:
+        raise HTTPException(429, str(e))
     except Exception as e:
         logging.exception("goal suggestion failed")
         raise HTTPException(502, f"Could not suggest goals: {type(e).__name__}: {e}")
-    return {"profile": profile.model_dump(), "goals": [g.model_dump() for g in goals]}
+    out = {"profile": profile.model_dump(), "goals": [g.model_dump() for g in goals]}
+    store().put(k, out)
+    return out
 
 
 @app.post("/api/student/roadmap")
-async def student_roadmap(req: StudentRoadmapRequest):
-    return sse(StudentAgent(*services()).run(req.profile, req.goal))
+async def student_roadmap(req: StudentRoadmapRequest, _: None = Depends(rate_limited)):
+    k = key("student", req.model_dump())
+    return sse(store().events(k, StudentAgent(*services()).run(req.profile, req.goal)))
 
 
 @app.post("/api/chat")
-async def chat_endpoint(req: ChatRequest):
-    return await chat.answer(req, *services())
+async def chat_endpoint(req: ChatRequest, _: None = Depends(rate_limited)):
+    if config.DEMO_MODE == "cached":
+        raise HTTPException(429, "Follow-up questions are paused in this demo.")
+    try:
+        return await chat.answer(req, *services())
+    except BudgetExceeded as e:
+        raise HTTPException(429, str(e))
 
 
 # Serve the built React app (frontend/dist) when present.

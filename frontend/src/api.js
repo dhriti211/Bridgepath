@@ -17,7 +17,7 @@ export async function suggestGoals(formData, signal) {
   const res = await fetch('/api/student/goals', { method: 'POST', body: formData, signal })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail ? JSON.stringify(body.detail) : `Request failed (${res.status})`)
+    throw requestError(res, body)
   }
   return res.json()
 }
@@ -26,7 +26,7 @@ async function stream(url, init, onEvent) {
   const res = await fetch(url, init)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail ? JSON.stringify(body.detail) : `Request failed (${res.status})`)
+    throw requestError(res, body)
   }
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -50,6 +50,14 @@ export async function askQuestion(payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  if (!res.ok) throw new Error(`Chat failed (${res.status})`)
+  if (!res.ok) throw requestError(res, await res.json().catch(() => ({})))
   return res.json()
+}
+
+// Turn an error response into an Error; 429 means a rate or spend limit was hit.
+function requestError(res, body) {
+  const detail = typeof body.detail === 'string' ? body.detail : body.detail && JSON.stringify(body.detail)
+  const err = new Error(detail || `Request failed (${res.status})`)
+  err.limit = res.status === 429
+  return err
 }

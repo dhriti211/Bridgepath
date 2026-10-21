@@ -98,7 +98,7 @@ export const STEP_LABELS = {
 export const STEP_MODELS = {
   intake: 'Nemotron Nano',
   dates: 'F-1 rules',
-  equivalency: 'Nemotron Ultra',
+  equivalency: 'Nemotron Super',
   research: 'Tavily',
   synthesis: 'Nemotron Super',
   plan: 'Nemotron Ultra',

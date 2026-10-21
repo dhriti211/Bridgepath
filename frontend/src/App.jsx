@@ -16,6 +16,7 @@ export default function App() {
   const [profile, setProfile] = useState(null)
   const [roadmap, setRoadmap] = useState(null)
   const [error, setError] = useState('')
+  const [limited, setLimited] = useState(false)
   const abort = useRef(null)
 
   async function run(streamer) {
@@ -25,7 +26,7 @@ export default function App() {
     try {
       await streamer(handle, abort.current.signal)
     } catch (e) {
-      if (e.name !== 'AbortError') { setError(e.message); setPhase('error') }
+      if (e.name !== 'AbortError') { setError(e.message); setLimited(!!e.limit); setPhase('error') }
     }
   }
 
@@ -42,7 +43,7 @@ export default function App() {
       setProfile(res.profile); setGoals(res.goals); setPhase('goals')
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (e) {
-      if (e.name !== 'AbortError') { setError(e.message); setPhase('error') }
+      if (e.name !== 'AbortError') { setError(e.message); setLimited(!!e.limit); setPhase('error') }
     } finally {
       setSuggesting(false)
     }
@@ -58,7 +59,7 @@ export default function App() {
       setSources((prev) => [...prev, ...ev.sources.filter((n) => !prev.some((p) => p.url === n.url))])
     else if (ev.type === 'profile') setProfile(ev.profile)
     else if (ev.type === 'roadmap') { setRoadmap(ev.roadmap); setPhase('done') }
-    else if (ev.type === 'error') { setError(ev.message); setPhase('error') }
+    else if (ev.type === 'error') { setError(ev.message); setLimited(!!ev.limit); setPhase('error') }
   }
 
   function reset() {
@@ -102,9 +103,9 @@ export default function App() {
           <section className="min-w-0 space-y-6">
             {phase === 'running' && <Waiting mode={mode} />}
             {phase === 'error' && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-                <h2 className="font-semibold text-red-800">Something went wrong</h2>
-                <p className="mt-1 text-sm text-red-700">{error}</p>
+              <div className={`rounded-2xl border p-6 ${limited ? 'border-accent/30 bg-accent-soft' : 'border-red-200 bg-red-50'}`}>
+                <h2 className={`font-semibold ${limited ? 'text-ink' : 'text-red-800'}`}>{limited ? 'Demo limit reached' : 'Something went wrong'}</h2>
+                <p className={`mt-1 text-sm ${limited ? 'text-ink' : 'text-red-700'}`}>{error}</p>
                 <button onClick={reset} className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white">Try again</button>
               </div>
             )}

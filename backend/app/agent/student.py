@@ -10,6 +10,7 @@ import json
 from collections.abc import AsyncIterator
 from datetime import date
 
+from ..guard import BudgetExceeded
 from ..llm import LLM
 from ..models import Deadline, Goal, Goals, Requirement, Source, StudentForm, StudentProfile
 from ..search import Search
@@ -38,6 +39,8 @@ class StudentAgent:
         try:
             async for event in self._run(profile, goal):
                 yield event
+        except BudgetExceeded as e:
+            yield {"type": "error", "message": str(e), "limit": True}
         except Exception as e:  # surface failures to the UI instead of a dead stream
             yield {"type": "error", "message": f"{type(e).__name__}: {e}"}
 

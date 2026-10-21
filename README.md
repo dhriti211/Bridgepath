@@ -41,7 +41,7 @@ Licensing mode:
 | Step | Job | Model / tool |
 |---|---|---|
 | Intake | Turn the form and CV into a structured profile | **Nemotron Nano** |
-| Equivalency | Estimate the US-equivalent degree and the right evaluation service | **Nemotron Ultra** |
+| Equivalency | Estimate the US-equivalent degree and the right evaluation service | **Nemotron Super** |
 | Research | Search state boards, exam bodies and bridge programs; runs in parallel with equivalency | **Tavily Search** |
 | Synthesis | Extract requirements from search results, each tied to a source URL | **Nemotron Super** |
 | Planning | Order steps by dependency, add costs, durations, documents, bridge jobs, warnings | **Nemotron Ultra** |
@@ -91,11 +91,35 @@ Open http://localhost:5173.
 
 The `Dockerfile` builds the frontend and serves it from the FastAPI app on one port. Set `NEBIUS_API_KEY` and `TAVILY_API_KEY` as environment variables on your host (for example Render, or Nebius Serverless Endpoints).
 
+## Keeping costs under control
+
+Nebius Token Factory credits are not a spending cap: usage past the credit is billed to the card on file. So Bridgepath enforces its own limits, set with environment variables:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `MAX_LLM_CALLS_PER_DAY` | 150 | Hard cap on Nemotron calls per UTC day. A roadmap uses about 4 to 5 calls. |
+| `MAX_LLM_CALLS_TOTAL` | 1500 | Hard cap on Nemotron calls for the life of the server's data folder. |
+| `MAX_SEARCHES_PER_DAY` | 150 | Hard cap on Tavily searches per day (cached searches don't count). |
+| `RATE_LIMIT_PER_HOUR` | 20 | Requests per visitor (IP address) per hour to endpoints that call Nebius or Tavily. |
+| `DEMO_MODE` | `live` | `cached` replays saved example runs and never calls Nebius or Tavily. |
+
+When a cap is hit, visitors see a friendly "demo limit reached" message and no call is made. `/api/health` shows today's and total usage.
+
+Other safeguards:
+
+- **Identical requests are replayed, not re-run.** Finished roadmaps and goal suggestions are saved under a hash of the request (for a week in live mode), and Tavily searches are cached too.
+- **Ultra only plans.** The most expensive model is used for the planning step only; everything else uses Nano or Super.
+- **Nothing runs in the background.** There are no warm-up calls or scheduled jobs; Nebius and Tavily are only called when someone submits a form.
+
+**Cached demo mode for judging.** Run each example in the app once in live mode, then run `python scripts/export_demo.py` and commit `backend/app/demo_cache.json`. Deploy with `DEMO_MODE=cached`, and the live site replays those runs at no cost.
+
 ## Project structure
 
 ```
 backend/
-  app/main.py            API: streaming roadmap endpoint, chat, health
+  app/main.py            API: streaming roadmap endpoints, goals, chat, health
+  app/guard.py           Spend caps and per-visitor rate limit
+  app/replay.py          Saved responses: replay repeat requests, cached demo mode
   app/llm.py             Token Factory client and Nemotron model routing
   app/search.py          Tavily search with SQLite cache
   app/agent/student.py   Student agent: goals, then dates → research → synthesis → plan → verify
@@ -107,6 +131,7 @@ backend/
   tests/
 frontend/                React + Vite + Tailwind
 scripts/check_setup.py   Verify keys and model access
+scripts/export_demo.py   Bundle saved example runs for DEMO_MODE=cached
 ```
 
 ## Disclaimer

@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from ..llm import LLM
 from ..models import (BridgeJob, Equivalency, IntakeForm, Profile, Requirement,
                       Roadmap, Source, Step)
+from ..guard import BudgetExceeded
 from ..search import Search, is_trusted
 from . import prompts
 from .queries import research_queries
@@ -53,6 +54,8 @@ class Agent:
         try:
             async for event in self._run(form, cv_text):
                 yield event
+        except BudgetExceeded as e:
+            yield {"type": "error", "message": str(e), "limit": True}
         except Exception as e:  # surface failures to the UI instead of a dead stream
             yield {"type": "error", "message": f"{type(e).__name__}: {e}"}
 
@@ -120,7 +123,7 @@ class Agent:
         })
 
     async def equivalency(self, profile: Profile) -> Equivalency:
-        return await self.llm.chat_json("reasoning", prompts.EQUIVALENCY,
+        return await self.llm.chat_json("medium", prompts.EQUIVALENCY,
                                         profile.model_dump_json(indent=2), Equivalency)
 
     async def synthesize(self, profile: Profile, sources: list[Source]) -> list[Requirement]:
