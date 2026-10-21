@@ -4,7 +4,9 @@ Hand-written so the research is reliable and covers every stage of the
 pathway; the agent fills in the state and country.
 """
 
-from ..models import Profile
+from datetime import date
+
+from ..models import Goal, Profile, StudentProfile
 
 _QUERIES = {
     "nurse": [
@@ -41,4 +43,28 @@ def research_queries(profile: Profile) -> list[str]:
     return [
         q.format(state=profile.target_state, country=profile.country)
         for q in _QUERIES[profile.profession]
+    ]
+
+
+_STUDENT_QUERIES = [
+    "USCIS optional practical training OPT F-1 students post-completion rules",
+    "USCIS STEM OPT extension requirements E-Verify employer Form I-983",
+    "Study in the States OPT STEM OPT unemployment days reporting requirements",
+    "USCIS H-1B cap registration {year} dates and selection process",
+    "H-1B rule changes {year} fee weighted selection F-1 students change of status",
+    "cap-exempt H-1B employers universities nonprofit research organizations",
+    "DHS STEM designated degree program list {major}",
+    "{role} jobs that sponsor H-1B {state}",
+    "{goal} international student F-1",
+]
+
+
+def student_queries(profile: StudentProfile, goal: Goal, today: date | None = None) -> list[str]:
+    today = today or date.today()
+    year = today.year if today.month < 4 else today.year + 1  # next H-1B registration season
+    state = "" if profile.target_state.lower().startswith("anywhere") else profile.target_state
+    return [
+        " ".join(q.format(year=year, major=profile.major, role=profile.target_role,
+                          state=state, goal=goal.title).split())
+        for q in _STUDENT_QUERIES
     ]

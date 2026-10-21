@@ -1,4 +1,4 @@
-// Original illustration: an engineer, a nurse and a teacher standing together.
+// Original illustration: an engineer, a nurse and a new graduate standing together.
 // Drawn for Bridgepath, so the project owns it outright.
 
 function Person({ x, scale = 1, skin, hair, top, legs = '#1c2430', shoes = '#111827', children, hairShape }) {
@@ -31,7 +31,7 @@ function Person({ x, scale = 1, skin, hair, top, legs = '#1c2430', shoes = '#111
 export default function HeroArt() {
   return (
     <svg viewBox="0 0 520 460" className="h-auto w-full" role="img"
-      aria-label="An engineer, a nurse and a teacher standing together">
+      aria-label="An engineer, a nurse and a new graduate standing together">
       {/* backdrop */}
       <path d="M70 120 C110 30 300 10 400 70 C500 130 510 300 430 380 C350 450 150 450 80 370 C20 300 30 200 70 120Z"
         className="fill-brand-soft" />
@@ -49,7 +49,7 @@ export default function HeroArt() {
           transform="rotate(-12 51 -115)" />
       </Person>
 
-      {/* Teacher: cardigan, glasses, book */}
+      {/* Graduate: cardigan, glasses, mortarboard, laptop */}
       <Person x={380} scale={0.94} skin="#8d5524" hair="#1f1b18" top="#b45309" legs="#3f3f46"
         hairShape={<g fill="#1f1b18">
           <circle cx="-20" cy="-262" r="14" /><circle cx="0" cy="-272" r="15" /><circle cx="20" cy="-262" r="14" />
@@ -59,8 +59,13 @@ export default function HeroArt() {
         <circle cx="-9" cy="-246" r="8" fill="none" stroke="#1c2430" strokeWidth="2.2" />
         <circle cx="9" cy="-246" r="8" fill="none" stroke="#1c2430" strokeWidth="2.2" />
         <path d="M-1 -246 h2" stroke="#1c2430" strokeWidth="2.2" />
-        <rect x="-62" y="-142" width="38" height="48" rx="4" fill="#0f766e" />
-        <rect x="-58" y="-138" width="4" height="40" fill="#99f6e4" />
+        <path d="M-40 -282 L0 -298 L40 -282 L0 -266Z" fill="#1c2430" />
+        <rect x="-14" y="-280" width="28" height="12" rx="3" fill="#1c2430" />
+        <path d="M30 -284 v22" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="30" cy="-260" r="4" fill="#f59e0b" />
+        <rect x="-70" y="-134" width="50" height="34" rx="4" fill="#334155" />
+        <rect x="-66" y="-130" width="42" height="26" rx="2" fill="#99f6e4" />
+        <rect x="-76" y="-100" width="62" height="6" rx="3" fill="#475569" />
       </Person>
 
       {/* Nurse: scrubs, stethoscope, badge (front and center) */}

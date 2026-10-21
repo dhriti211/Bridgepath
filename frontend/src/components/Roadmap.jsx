@@ -7,6 +7,7 @@ const months = (w) => Math.max(1, Math.round(w / 4.33))
 
 export default function Roadmap({ roadmap, profile }) {
   const { steps } = roadmap
+  const student = roadmap.mode === 'student'
   const index = Object.fromEntries(steps.map((s, i) => [s.id, i + 1]))
   const storeKey = 'bridgepath-done:' + roadmap.headline + steps.map((s) => s.id).join()
   const [done, setDone] = useState(() => {
@@ -24,15 +25,21 @@ export default function Roadmap({ roadmap, profile }) {
     <div className="space-y-6">
       <section className="fade-up print-break rounded-3xl bg-gradient-to-br from-brand to-brand-dark p-6 text-white shadow-sm sm:p-8">
         <p className="text-sm font-medium text-white/80">
-          Your path as a {profile?.degree} holder from {profile?.country} → {profile?.target_state}
+          {student
+            ? `Your plan as a ${profile?.degree_level} ${profile?.major} graduate → ${profile?.target_role}`
+            : `Your path as a ${profile?.degree} holder from ${profile?.country} → ${profile?.target_state}`}
         </p>
         <h2 className="mt-2 font-display text-2xl leading-snug sm:text-3xl">{roadmap.headline}</h2>
         <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Stat label="Estimated cost" value={range(roadmap.total_cost_usd_min, roadmap.total_cost_usd_max, usd)} />
           <Stat label="Estimated time" value={`${range(months(roadmap.total_weeks_min), months(roadmap.total_weeks_max))} months`} />
-          <Stat label="US equivalent" value={roadmap.us_equivalent} className="col-span-2 sm:col-span-1" />
+          {roadmap.us_equivalent && (
+            <Stat label={student ? 'Visa path' : 'US equivalent'} value={roadmap.us_equivalent} className="col-span-2 sm:col-span-1" />
+          )}
         </dl>
       </section>
+
+      {roadmap.deadlines?.length > 0 && <Deadlines deadlines={roadmap.deadlines} />}
 
       <section>
         <div className="no-print sticky top-[65px] z-10 -mx-1 mb-4 rounded-xl bg-paper/90 px-1 py-2 backdrop-blur">
@@ -91,10 +98,10 @@ export default function Roadmap({ roadmap, profile }) {
                     <span className="text-accent">
                       Unofficial source:{' '}
                       <a href={s.source_url} target="_blank" rel="noreferrer" className="underline">{hostOf(s.source_url)}</a>
-                      . Double-check with the state board.
+                      . Double-check with {student ? 'USCIS or your DSO' : 'the state board'}.
                     </span>
                   ) : (
-                    <span className="text-accent">No source found for this step. Confirm with the state board.</span>
+                    <span className="text-accent">No source found for this step. Confirm with {student ? 'your DSO' : 'the state board'}.</span>
                   )}
                 </div>
                 <label className="no-print mt-4 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted hover:text-ink">
@@ -110,8 +117,12 @@ export default function Roadmap({ roadmap, profile }) {
 
       {roadmap.bridge_jobs.length > 0 && (
         <section className="print-break">
-          <h3 className="mb-1 font-display text-xl">Work you can do now</h3>
-          <p className="mb-4 text-sm text-muted">Jobs that use your skills and build US experience while you get licensed.</p>
+          <h3 className="mb-1 font-display text-xl">{student ? 'Employers to target' : 'Work you can do now'}</h3>
+          <p className="mb-4 text-sm text-muted">
+            {student
+              ? 'Where your odds of sponsorship are better for this goal.'
+              : 'Jobs that use your skills and build US experience while you get licensed.'}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {roadmap.bridge_jobs.map((j) => (
               <div key={j.title} className="rounded-xl border border-line bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-md">
@@ -150,9 +161,60 @@ export default function Roadmap({ roadmap, profile }) {
       )}
 
       <p className="text-xs text-muted">
-        Bridgepath gives guidance, not legal advice. Rules change; always confirm with the official licensing board.
+        {student
+          ? 'Bridgepath gives guidance, not legal or immigration advice. Rules change; confirm every step with your DSO, and talk to an immigration attorney for anything beyond OPT.'
+          : 'Bridgepath gives guidance, not legal advice. Rules change; always confirm with the official licensing board.'}
       </p>
     </div>
+  )
+}
+
+const DAY = 24 * 60 * 60 * 1000
+const fmtDate = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+function countdown(d) {
+  const now = new Date()
+  const end = d.end && new Date(d.end + 'T23:59:59')
+  const start = d.start && new Date(d.start + 'T00:00:00')
+  if (end && end < now) return { text: 'Passed', tone: 'bg-line text-muted' }
+  if (start && start > now) {
+    const days = Math.ceil((start - now) / DAY)
+    return { text: `Opens in ${days} day${days === 1 ? '' : 's'}`, tone: 'bg-brand-soft text-brand-dark' }
+  }
+  if (end) {
+    const days = Math.ceil((end - now) / DAY)
+    return { text: start ? `Open now · ${days} days left` : `In ${days} day${days === 1 ? '' : 's'}`, tone: 'bg-accent-soft text-accent' }
+  }
+  return null
+}
+
+function Deadlines({ deadlines }) {
+  return (
+    <section className="print-break">
+      <h3 className="mb-1 font-display text-xl">Your key dates</h3>
+      <p className="mb-4 text-sm text-muted">Worked out from your program dates using the F-1 rules.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {deadlines.map((d, i) => {
+          const c = countdown(d)
+          return (
+            <div key={d.label} style={{ animationDelay: `${i * 80}ms` }}
+              className="fade-up rounded-xl border border-line bg-card p-4 shadow-sm transition hover:border-brand/50 hover:shadow-md">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h4 className="font-semibold">{d.label}</h4>
+                {c && <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${c.tone}`}>{c.text}</span>}
+              </div>
+              {(d.start || d.end) && (
+                <p className="mt-1 text-sm font-medium text-brand">
+                  {d.start && d.end ? `${fmtDate(d.start)} to ${fmtDate(d.end)}` : fmtDate(d.end || d.start)}
+                  {d.approximate && <span className="font-normal text-muted"> (usual dates; check USCIS)</span>}
+                </p>
+              )}
+              <p className="mt-2 text-sm leading-relaxed text-muted">{d.detail}</p>
+            </div>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

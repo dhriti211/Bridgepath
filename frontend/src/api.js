@@ -1,8 +1,29 @@
 // Calls to the Bridgepath backend.
 
-// POST the intake form and call onEvent for every server-sent event.
-export async function streamRoadmap(formData, onEvent, signal) {
-  const res = await fetch('/api/roadmap', { method: 'POST', body: formData, signal })
+// POST the licensing intake form and call onEvent for every server-sent event.
+export function streamRoadmap(formData, onEvent, signal) {
+  return stream('/api/roadmap', { method: 'POST', body: formData, signal }, onEvent)
+}
+
+// POST a student's profile and chosen goal, streaming events the same way.
+export function streamStudentRoadmap(payload, onEvent, signal) {
+  return stream('/api/student/roadmap', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal,
+  }, onEvent)
+}
+
+// POST the student form (and CV) and get back a profile and 3 suggested goals.
+export async function suggestGoals(formData, signal) {
+  const res = await fetch('/api/student/goals', { method: 'POST', body: formData, signal })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail ? JSON.stringify(body.detail) : `Request failed (${res.status})`)
+  }
+  return res.json()
+}
+
+async function stream(url, init, onEvent) {
+  const res = await fetch(url, init)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail ? JSON.stringify(body.detail) : `Request failed (${res.status})`)

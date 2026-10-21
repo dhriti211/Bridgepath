@@ -13,8 +13,9 @@ from pypdf import PdfReader
 from . import config
 from .agent import chat
 from .agent.pipeline import Agent
+from .agent.student import StudentAgent
 from .llm import LLM
-from .models import ChatRequest, IntakeForm
+from .models import ChatRequest, IntakeForm, StudentForm, StudentRoadmapRequest
 from .search import Search
 
 logging.basicConfig(level=logging.INFO)
@@ -76,14 +77,52 @@ async def roadmap(
     except ValidationError as e:
         raise HTTPException(422, e.errors(include_url=False))
     cv_text = await read_cv(cv)
-    agent = Agent(*services())
+    return sse(Agent(*services()).run(form, cv_text))
 
+
+def sse(events) -> StreamingResponse:
     async def stream():
-        async for event in agent.run(form, cv_text):
+        async for event in events:
             yield f"data: {json.dumps(event)}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.post("/api/student/goals")
+async def student_goals(
+    degree_level: str = Form(...),
+    major: str = Form(...),
+    target_role: str = Form(...),
+    school: str = Form(""),
+    country: str = Form(""),
+    stem: str = Form("not sure"),
+    stage: str = Form("studying"),
+    program_end: str = Form(""),
+    opt_end: str = Form(""),
+    target_state: str = Form("Anywhere in the US"),
+    notes: str = Form(""),
+    cv: UploadFile | None = File(None),
+):
+    try:
+        form = StudentForm(degree_level=degree_level, major=major, target_role=target_role,
+                           school=school, country=country, stem=stem, stage=stage,
+                           program_end=program_end, opt_end=opt_end,
+                           target_state=target_state, notes=notes)
+    except ValidationError as e:
+        raise HTTPException(422, e.errors(include_url=False))
+    cv_text = await read_cv(cv)
+    try:
+        profile, goals = await StudentAgent(*services()).goals(form, cv_text)
+    except Exception as e:
+        logging.exception("goal suggestion failed")
+        raise HTTPException(502, f"Could not suggest goals: {type(e).__name__}: {e}")
+    return {"profile": profile.model_dump(), "goals": [g.model_dump() for g in goals]}
+
+
+@app.post("/api/student/roadmap")
+async def student_roadmap(req: StudentRoadmapRequest):
+    return sse(StudentAgent(*services()).run(req.profile, req.goal))
 
 
 @app.post("/api/chat")

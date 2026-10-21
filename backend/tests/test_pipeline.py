@@ -90,7 +90,7 @@ def test_finalize_sources_only_cited():
     plan = PlanOut(headline="h", steps=[Step(id="s1", title="t", description="d", source_url=URL + "/")])
     eq = Equivalency(us_equivalent="BSN", evaluation_service="CGFNS", evaluation_reason="r")
     sources = {URL: Source(title="a", url=URL), "https://other.gov": Source(title="b", url="https://other.gov")}
-    rm = finalize(plan, eq, sources)
+    rm = finalize(plan, eq.us_equivalent, sources)
     assert rm.steps[0].verified
     assert [s.url for s in rm.sources] == [URL]
 
@@ -113,7 +113,7 @@ def test_official_flag_only_for_official_sites():
         Step(id="s2", title="t", description="d", source_url="https://www.archerreview.com/x")])
     eq = Equivalency(us_equivalent="BSN", evaluation_service="CGFNS", evaluation_reason="r")
     sources = {u: Source(title="a", url=u) for u in (URL, "https://www.archerreview.com/x")}
-    rm = finalize(plan, eq, sources)
+    rm = finalize(plan, eq.us_equivalent, sources)
     assert [s.official for s in rm.steps] == [True, False]
     assert all(s.verified for s in rm.steps)
 

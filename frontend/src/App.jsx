@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { streamRoadmap } from './api'
+import { streamRoadmap, streamStudentRoadmap, suggestGoals } from './api'
 import AgentFeed from './components/AgentFeed'
 import Chat from './components/Chat'
+import GoalPicker from './components/GoalPicker'
 import Landing from './components/Landing'
 import Roadmap from './components/Roadmap'
 
 export default function App() {
-  const [phase, setPhase] = useState('form') // form | running | done | error
+  const [phase, setPhase] = useState('form') // form | goals | running | done | error
+  const [mode, setMode] = useState('student') // student | license
+  const [suggesting, setSuggesting] = useState(false)
+  const [goals, setGoals] = useState(null)
   const [steps, setSteps] = useState({})
   const [sources, setSources] = useState([])
   const [profile, setProfile] = useState(null)
@@ -14,15 +18,38 @@ export default function App() {
   const [error, setError] = useState('')
   const abort = useRef(null)
 
-  async function start(formData) {
-    setPhase('running'); setSteps({}); setSources([]); setProfile(null); setRoadmap(null); setError('')
+  async function run(streamer) {
+    setPhase('running'); setSteps({}); setSources([]); setRoadmap(null); setError('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
     abort.current = new AbortController()
     try {
-      await streamRoadmap(formData, handle, abort.current.signal)
+      await streamer(handle, abort.current.signal)
     } catch (e) {
       if (e.name !== 'AbortError') { setError(e.message); setPhase('error') }
     }
+  }
+
+  function startLicense(formData) {
+    setMode('license'); setProfile(null)
+    run((onEvent, signal) => streamRoadmap(formData, onEvent, signal))
+  }
+
+  async function startStudent(formData) {
+    setMode('student'); setSuggesting(true); setError('')
+    abort.current = new AbortController()
+    try {
+      const res = await suggestGoals(formData, abort.current.signal)
+      setProfile(res.profile); setGoals(res.goals); setPhase('goals')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (e) {
+      if (e.name !== 'AbortError') { setError(e.message); setPhase('error') }
+    } finally {
+      setSuggesting(false)
+    }
+  }
+
+  function pickGoal(goal) {
+    run((onEvent, signal) => streamStudentRoadmap({ profile, goal }, onEvent, signal))
   }
 
   function handle(ev) {
@@ -36,6 +63,7 @@ export default function App() {
 
   function reset() {
     abort.current?.abort()
+    setSuggesting(false)
     setPhase('form')
   }
 
@@ -63,14 +91,16 @@ export default function App() {
       </header>
 
       {phase === 'form' ? (
-        <Landing onSubmit={start} />
+        <Landing onLicense={startLicense} onStudent={startStudent} suggesting={suggesting} />
+      ) : phase === 'goals' ? (
+        <GoalPicker profile={profile} goals={goals} onPick={pickGoal} onBack={reset} />
       ) : (
         <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[320px_1fr]">
           <aside className="no-print space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <AgentFeed steps={steps} sources={sources} compact={phase === 'done'} />
+            <AgentFeed mode={mode} steps={steps} sources={sources} compact={phase === 'done'} />
           </aside>
           <section className="min-w-0 space-y-6">
-            {phase === 'running' && <Waiting />}
+            {phase === 'running' && <Waiting mode={mode} />}
             {phase === 'error' && (
               <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
                 <h2 className="font-semibold text-red-800">Something went wrong</h2>
@@ -95,18 +125,26 @@ export default function App() {
   )
 }
 
-const TIPS = [
+const TIPS = {
+  student: [
+    'On post-completion OPT you can be unemployed for at most 90 days in total, so plan your job search early.',
+    'STEM OPT needs an employer enrolled in E-Verify. It is worth asking about before you accept an offer.',
+    'Universities and many research nonprofits are cap-exempt: they can sponsor an H-1B without the lottery.',
+  ],
+  license: [
   'Most states accept more than one credential evaluation service. Your roadmap names the options your state accepts.',
   'Licensing fees and exam rules change. Every step links to the page it came from so you can check.',
   'You can often work in a related job while you relicense. Look for "Work you can do now" in your roadmap.',
-]
+  ],
+}
 
-function Waiting() {
+function Waiting({ mode }) {
+  const tips = TIPS[mode]
   const [tip, setTip] = useState(0)
   useEffect(() => {
-    const t = setInterval(() => setTip((i) => (i + 1) % TIPS.length), 6000)
+    const t = setInterval(() => setTip((i) => (i + 1) % tips.length), 6000)
     return () => clearInterval(t)
-  }, [])
+  }, [tips])
   return (
     <div className="fade-up rounded-3xl border border-line bg-card p-8 text-center shadow-sm sm:p-10">
       <div className="relative mx-auto h-14 w-14">
@@ -114,9 +152,11 @@ function Waiting() {
         <div className="relative h-14 w-14 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
       </div>
       <h2 className="mt-5 font-display text-2xl">Building your roadmap</h2>
-      <p className="mt-1 text-sm text-muted">We're reading official licensing sources for you. This takes about a minute.</p>
+      <p className="mt-1 text-sm text-muted">
+        We're reading {mode === 'student' ? 'USCIS and other official sources' : 'official licensing sources'} for you. This takes about a minute.
+      </p>
       <p key={tip} className="fade-up mx-auto mt-6 max-w-md rounded-xl bg-paper px-4 py-3 text-sm text-ink">
-        <span className="font-medium text-brand">Did you know? </span>{TIPS[tip]}
+        <span className="font-medium text-brand">Did you know? </span>{tips[tip]}
       </p>
     </div>
   )

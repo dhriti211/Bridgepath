@@ -16,7 +16,7 @@ class Route(BaseModel):
 
 
 async def answer(req: ChatRequest, llm: LLM, search: Search) -> dict:
-    context = json.dumps({"profile": req.profile.model_dump(),
+    context = json.dumps({"profile": req.profile,
                           "roadmap": req.roadmap.model_dump(exclude={"sources"})})
 
     route = await llm.chat_json("fast", prompts.CHAT_ROUTER,
@@ -26,7 +26,8 @@ async def answer(req: ChatRequest, llm: LLM, search: Search) -> dict:
         sources = (await search.search(route.query, max_results=4))[:4]
 
     found = "\n\n".join(f"{s.title}\nURL: {s.url}\n{s.snippet[:1000]}" for s in sources)
-    messages = [{"role": "system", "content": prompts.CHAT + "\n\nContext:\n" + context}]
+    system = prompts.STUDENT_CHAT if req.roadmap.mode == "student" else prompts.CHAT
+    messages = [{"role": "system", "content": system + "\n\nContext:\n" + context}]
     messages += [m for m in req.history[-8:] if m.get("role") in ("user", "assistant")]
     messages.append({"role": "user", "content": req.question
                      + (f"\n\nFresh search results:\n{found}" if found else "")})

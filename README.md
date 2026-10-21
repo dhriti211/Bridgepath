@@ -1,27 +1,42 @@
 # Bridgepath
 
-**Your degree still counts.** Bridgepath turns a foreign degree into a personal, sourced, step-by-step plan to get licensed in the US.
+**Study here. Build your career here.** Bridgepath turns an international student's degree, dates and goals into a personal, sourced plan for working in the US: OPT, STEM OPT, H-1B and the job search, in the right order.
 
-About 2 million college-educated immigrants in the US are unemployed or working far below their training, which costs nearly $40 billion a year in lost wages ([Migration Policy Institute, 2021](https://www.migrationpolicy.org/research/brain-waste-college-educated-immigrants)). A nurse from the Philippines works as a caregiver; a civil engineer from India drives for a ride app. The barrier is usually not skill. It is a maze of evaluation services, state boards, exams, English tests and fees that differ by profession and by state.
+There were 1.18 million international students in the US in 2024/25, 57% of them in STEM, and 294,000 on OPT ([IIE Open Doors 2025](https://www.iie.org/news/open-doors-2025-press-release/)). For them, getting hired is not just about skills. It is a maze of filing windows, unemployment-day limits, E-Verify rules, lottery seasons and sponsorship questions, and the rules keep changing. The answers are spread across USCIS pages, school portals, law-firm blogs and forums.
 
-Bridgepath is an AI agent that reads the official rules live and builds the plan for you.
+Bridgepath also helps professionals trained abroad (nurses, engineers and K-12 teachers) get relicensed in their state. About 2 million college-educated immigrants in the US are unemployed or working below their training ([Migration Policy Institute, 2021](https://www.migrationpolicy.org/research/brain-waste-college-educated-immigrants)).
 
-> Built for the Nebius x NVIDIA Global AI Hackathon, Best Apps & Agents track.
+> Built by an international student for the Nebius x NVIDIA Global AI Hackathon, Best Apps & Agents track.
 
 ## What it does
 
-1. **You describe your background**: profession, country, degree, experience, target state, English test, and optionally a CV or transcript.
-2. **You watch the agent work**: a live feed shows each step and the official sources it finds.
-3. **You get a roadmap**: ordered steps, each with cost, time, documents needed and a link to the official source. Total cost and time are calculated from the steps and their dependencies.
-4. **Work you can do now**: jobs that use your skills while you relicense.
-5. **Ask follow-ups**: "What if I move to Texas?" The agent searches again when needed.
-6. **Download a PDF** checklist.
+**For international (F-1) students**
 
-Supported professions today: Registered Nurse, Engineer, K-12 Teacher, in any US state.
+1. **Tell it where you are**: degree level, major, STEM or not, program end date, OPT dates if you have them, the job you want, and optionally your resume.
+2. **Pick a goal**: the agent reads your background and suggests three realistic, different goals (for example big tech, a cap-exempt university lab, or a stretch path toward O-1A). Pick one or type your own.
+3. **Get your key dates**: your OPT filing window, grace period, STEM OPT window and H-1B season, calculated from your own dates using the F-1 rules, with a live countdown.
+4. **Get your roadmap**: ordered career and immigration steps, each with cost, time, documents and a link to USCIS or another official source, plus the kinds of employers to target.
+5. **Track and ask**: tick off steps, ask follow-ups ("What if I lose my job on OPT?"), and download a PDF.
+
+**For professionals trained abroad**: enter your profession, country, degree and state, and get a relicensing roadmap with costs, exams, sources and jobs you can do while you relicense.
 
 ## How it uses NVIDIA Nemotron, Nebius Token Factory and Tavily
 
 Every model call goes to **Nebius Token Factory** (OpenAI-compatible API). Each job is routed to the right-sized **NVIDIA Nemotron 3** model, so the app stays fast and credits go further:
+
+Student mode:
+
+| Step | Job | Model / tool |
+|---|---|---|
+| Intake | Turn the form and resume into a structured profile | **Nemotron Nano** |
+| Goals | Suggest three realistic goals for this person | **Nemotron Super** |
+| Key dates | OPT, STEM OPT, grace period and H-1B dates from the F-1 rules | Deterministic ([`dates.py`](backend/app/agent/dates.py)) |
+| Research | Search USCIS, Study in the States, DOL and sponsor data | **Tavily Search** |
+| Synthesis | Extract the current rules, each tied to a source URL | **Nemotron Super** |
+| Planning | Order career and visa steps around the key dates | **Nemotron Ultra** |
+| Verification | Keep only links that came from real search results | Deterministic check |
+
+Licensing mode:
 
 | Step | Job | Model / tool |
 |---|---|---|
@@ -33,7 +48,7 @@ Every model call goes to **Nebius Token Factory** (OpenAI-compatible API). Each 
 | Verification | Keep only links that came from real search results; flag unsourced steps | Deterministic check |
 | Follow-up chat | Decide if a fresh search is needed (Nano), then answer (Super) | **Nemotron Nano + Super**, **Tavily** |
 
-Code: model routing in [`backend/app/llm.py`](backend/app/llm.py), the agent in [`backend/app/agent/pipeline.py`](backend/app/agent/pipeline.py), Tavily research and caching in [`backend/app/search.py`](backend/app/search.py).
+Code: model routing in [`backend/app/llm.py`](backend/app/llm.py), the agents in [`backend/app/agent/student.py`](backend/app/agent/student.py) and [`backend/app/agent/pipeline.py`](backend/app/agent/pipeline.py), Tavily research and caching in [`backend/app/search.py`](backend/app/search.py).
 
 Bridgepath picks the Nemotron models automatically from the Token Factory model list (Nano, Super, Ultra). You can pin them with `MODEL_FAST`, `MODEL_MEDIUM` and `MODEL_REASONING` in `.env`.
 
@@ -83,8 +98,10 @@ backend/
   app/main.py            API: streaming roadmap endpoint, chat, health
   app/llm.py             Token Factory client and Nemotron model routing
   app/search.py          Tavily search with SQLite cache
-  app/agent/pipeline.py  The agent: intake → equivalency → research → synthesis → plan → verify
-  app/agent/queries.py   Research questions per profession
+  app/agent/student.py   Student agent: goals, then dates → research → synthesis → plan → verify
+  app/agent/dates.py     F-1 key dates (OPT, STEM OPT, grace period, H-1B season)
+  app/agent/pipeline.py  Licensing agent: intake → equivalency → research → synthesis → plan → verify
+  app/agent/queries.py   Research questions per profession and for students
   app/agent/prompts.py   Prompts for each step
   app/agent/chat.py      Follow-up questions
   tests/
