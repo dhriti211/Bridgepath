@@ -3,7 +3,7 @@
 Three tiers, each mapped to a Nemotron 3 model:
   fast      -> Nano   (intake parsing, cheap extraction)
   medium    -> Super  (reading search results, chat)
-  reasoning -> Ultra  (equivalency reasoning, roadmap planning)
+  reasoning -> Ultra  (roadmap planning only; it is the most expensive)
 """
 
 import json
@@ -15,6 +15,7 @@ from openai import AsyncOpenAI, BadRequestError
 from pydantic import BaseModel, ValidationError
 
 from . import config
+from .guard import budget
 
 log = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ class LLM:
 
     async def chat(self, tier: Tier, messages: list[dict], temperature: float = 0.2,
                    max_tokens: int | None = None) -> str:
+        budget().spend("llm")  # raises BudgetExceeded once a cap is hit
         model = await self.model_for(tier)
         kwargs = dict(model=model, messages=messages, temperature=temperature,
                       max_tokens=max_tokens or _MAX_TOKENS[tier])

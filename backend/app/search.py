@@ -12,6 +12,7 @@ import time
 from tavily import TavilyClient
 
 from . import config
+from .guard import budget
 from .models import Source
 
 CACHE_TTL_SECONDS = 7 * 24 * 3600
@@ -50,6 +51,7 @@ class Search:
     async def search(self, query: str, max_results: int = 5) -> list[Source]:
         cached = self._get(query)
         if cached is None:
+            budget().spend("search")  # raises BudgetExceeded once the daily cap is hit
             resp = await asyncio.to_thread(
                 self.client.search, query, search_depth="advanced", max_results=max_results
             )

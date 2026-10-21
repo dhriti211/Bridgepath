@@ -76,7 +76,18 @@ class BridgeJob(BaseModel):
     typical_pay: str = ""
 
 
+class Deadline(BaseModel):
+    """A date computed from the student's own dates by fixed F-1 rules (see agent/dates.py)."""
+
+    label: str
+    start: str = ""  # ISO date; set for windows
+    end: str = ""    # ISO date; the deadline itself
+    detail: str
+    approximate: bool = False
+
+
 class Roadmap(BaseModel):
+    mode: Literal["license", "student"] = "license"
     headline: str
     us_equivalent: str
     steps: list[Step]
@@ -87,10 +98,67 @@ class Roadmap(BaseModel):
     total_weeks_min: float = 0
     total_weeks_max: float = 0
     sources: list[Source] = []
+    deadlines: list[Deadline] = []
+
+
+# ---- International (F-1) students ----
+
+Stage = Literal["studying", "opt", "stem_opt", "other"]
+
+
+class StudentForm(BaseModel):
+    """What an international student types into the form."""
+
+    degree_level: str = Field(description="e.g. \"Master's\"")
+    major: str = Field(description="e.g. 'Computer Science'")
+    school: str = ""
+    country: str = Field("", description="Country of citizenship")
+    stem: Literal["yes", "no", "not sure"] = "not sure"
+    stage: Stage = "studying"
+    program_end: str = Field("", description="ISO date the program ends (I-20 end date)")
+    opt_end: str = Field("", description="ISO date the current OPT/EAD card ends, if on OPT")
+    target_role: str = Field(description="e.g. 'Data engineer'")
+    target_state: str = "Anywhere in the US"
+    notes: str = ""
+
+
+class StudentProfile(BaseModel):
+    """Structured profile for an international student."""
+
+    degree_level: str
+    major: str
+    school: str = ""
+    country: str = ""
+    stem: str = "not sure"
+    stage: Stage = "studying"
+    program_end: str = ""
+    opt_end: str = ""
+    target_role: str
+    target_state: str = "Anywhere in the US"
+    skills: list[str] = []
+    experience: list[str] = Field([], description="Internships and jobs, one line each")
+    notes: str = Field("", description="Copied verbatim from the form; never invented")
+    summary: str = ""
+
+
+class Goal(BaseModel):
+    id: str
+    title: str = Field(description="The career goal, e.g. 'Data engineer at a STEM OPT employer'")
+    why: str = Field(description="One or two sentences on why it fits this person")
+    visa_path: str = Field(description="e.g. 'OPT → STEM OPT → H-1B'")
+
+
+class Goals(BaseModel):
+    goals: list[Goal]
+
+
+class StudentRoadmapRequest(BaseModel):
+    profile: StudentProfile
+    goal: Goal
 
 
 class ChatRequest(BaseModel):
     question: str
-    profile: Profile
+    profile: dict
     roadmap: Roadmap
     history: list[dict] = []

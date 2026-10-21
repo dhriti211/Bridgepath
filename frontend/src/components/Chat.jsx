@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { askQuestion } from '../api'
 import { hostOf } from '../util'
 
-const SUGGESTIONS = ['What if I move to Texas instead?', 'Which step should I start this week?', 'Can I work while I study for the exam?']
+const SUGGESTIONS = {
+  license: ['What if I move to Texas instead?', 'Which step should I start this week?', 'Can I work while I study for the exam?'],
+  student: ['What happens if I lose my job on OPT?', 'Which companies near me sponsor H-1B?', 'Can I travel abroad while my OPT is pending?'],
+}
 
 export default function Chat({ profile, roadmap }) {
   const [messages, setMessages] = useState([])
@@ -34,7 +37,7 @@ export default function Chat({ profile, roadmap }) {
       <div className="max-h-96 flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <div className="flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
+            {SUGGESTIONS[roadmap.mode === 'student' ? 'student' : 'license'].map((s) => (
               <button key={s} onClick={() => send(s)} className="rounded-full border border-line px-3 py-1.5 text-left text-sm hover:border-brand hover:text-brand">
                 {s}
               </button>

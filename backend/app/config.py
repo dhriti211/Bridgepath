@@ -21,3 +21,14 @@ MODEL_REASONING = os.getenv("MODEL_REASONING", "")
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "backend" / "data"))
 CACHE_DB = DATA_DIR / "cache.db"
 FRONTEND_DIST = ROOT / "frontend" / "dist"
+
+# ---- Spend guard (see README "Keeping costs under control") ----
+# Hard caps on paid API calls. Once hit, the app shows "demo limit reached" instead of calling out.
+MAX_LLM_CALLS_PER_DAY = int(os.getenv("MAX_LLM_CALLS_PER_DAY", "150"))
+MAX_LLM_CALLS_TOTAL = int(os.getenv("MAX_LLM_CALLS_TOTAL", "1500"))
+MAX_SEARCHES_PER_DAY = int(os.getenv("MAX_SEARCHES_PER_DAY", "150"))
+# Requests per visitor (IP address) per hour to endpoints that call Nebius or Tavily.
+RATE_LIMIT_PER_HOUR = int(os.getenv("RATE_LIMIT_PER_HOUR", "20"))
+# "live": call Nebius and Tavily (within the caps). "cached": replay saved roadmaps only,
+# never call Nebius or Tavily.
+DEMO_MODE = os.getenv("DEMO_MODE", "live").strip().lower()

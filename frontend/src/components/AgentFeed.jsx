@@ -1,14 +1,17 @@
 import { STEP_LABELS, STEP_MODELS } from '../data'
 import { hostOf } from '../util'
 
-const ORDER = ['intake', 'equivalency', 'research', 'synthesis', 'plan', 'verify']
+const ORDER = {
+  license: ['intake', 'equivalency', 'research', 'synthesis', 'plan', 'verify'],
+  student: ['intake', 'dates', 'research', 'synthesis', 'plan', 'verify'],
+}
 
-export default function AgentFeed({ steps, sources, compact }) {
+export default function AgentFeed({ mode = 'license', steps, sources, compact }) {
   return (
     <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">How we built your plan</h3>
       <ol className="space-y-3">
-        {ORDER.map((key) => {
+        {ORDER[mode].map((key) => {
           const s = steps[key]
           const status = s?.status || 'waiting'
           return (

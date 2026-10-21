@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from ..llm import LLM
 from ..models import (BridgeJob, Equivalency, IntakeForm, Profile, Requirement,
                       Roadmap, Source, Step)
+from ..guard import BudgetExceeded
 from ..search import Search, is_trusted
 from . import prompts
 from .queries import research_queries
@@ -53,6 +54,8 @@ class Agent:
         try:
             async for event in self._run(form, cv_text):
                 yield event
+        except BudgetExceeded as e:
+            yield {"type": "error", "message": str(e), "limit": True}
         except Exception as e:  # surface failures to the UI instead of a dead stream
             yield {"type": "error", "message": f"{type(e).__name__}: {e}"}
 
@@ -99,7 +102,7 @@ class Agent:
 
         # 6. Verification (deterministic): every link must come from real search results.
         yield step("verify", "running", "Checking every step against its source")
-        roadmap = finalize(plan, equivalency, all_sources)
+        roadmap = finalize(plan, equivalency.us_equivalent, all_sources)
         official = sum(s.official for s in roadmap.steps)
         verified = sum(s.verified for s in roadmap.steps)
         yield step("verify", "done", f"{official} of {len(roadmap.steps)} steps backed by an official "
@@ -120,16 +123,11 @@ class Agent:
         })
 
     async def equivalency(self, profile: Profile) -> Equivalency:
-        return await self.llm.chat_json("reasoning", prompts.EQUIVALENCY,
+        return await self.llm.chat_json("medium", prompts.EQUIVALENCY,
                                         profile.model_dump_json(indent=2), Equivalency)
 
     async def synthesize(self, profile: Profile, sources: list[Source]) -> list[Requirement]:
-        picked = sources[:MAX_SOURCES_FOR_SYNTHESIS]
-        docs = "\n\n".join(
-            f"[{i + 1}] [{'OFFICIAL' if s.official else 'THIRD-PARTY'}] {s.title}\n"
-            f"URL: {s.url}\n{s.snippet[:SNIPPET_CHARS]}"
-            for i, s in enumerate(picked)
-        )
+        docs = format_sources(sources)
         user = f"Profile:\n{profile.model_dump_json(indent=2)}\n\nSearch results:\n{docs}"
         out = await self.llm.chat_json("medium", prompts.SYNTHESIS, user, Requirements)
         return out.requirements
@@ -144,7 +142,17 @@ class Agent:
         return await self.llm.chat_json("reasoning", prompts.PLAN, user, PlanOut)
 
 
-def finalize(plan: PlanOut, equivalency: Equivalency, sources: dict[str, Source]) -> Roadmap:
+def format_sources(sources: list[Source]) -> str:
+    """Search results as numbered, labeled documents for a synthesis prompt."""
+    return "\n\n".join(
+        f"[{i + 1}] [{'OFFICIAL' if s.official else 'THIRD-PARTY'}] {s.title}\n"
+        f"URL: {s.url}\n{s.snippet[:SNIPPET_CHARS]}"
+        for i, s in enumerate(sources[:MAX_SOURCES_FOR_SYNTHESIS])
+    )
+
+
+def finalize(plan: PlanOut, us_equivalent: str, sources: dict[str, Source],
+             **extra) -> Roadmap:
     """Verify links, then compute total cost and the critical-path duration."""
     known = {u.rstrip("/") for u in sources}
     steps = []
@@ -158,7 +166,7 @@ def finalize(plan: PlanOut, equivalency: Equivalency, sources: dict[str, Source]
     cited = {s.source_url.rstrip("/") for s in steps if s.source_url}
     return Roadmap(
         headline=plan.headline,
-        us_equivalent=equivalency.us_equivalent,
+        us_equivalent=us_equivalent,
         steps=steps,
         bridge_jobs=plan.bridge_jobs,
         warnings=plan.warnings,
@@ -167,6 +175,7 @@ def finalize(plan: PlanOut, equivalency: Equivalency, sources: dict[str, Source]
         total_weeks_min=weeks_min,
         total_weeks_max=weeks_max,
         sources=[s for u, s in sources.items() if u.rstrip("/") in cited],
+        **extra,
     )
 
 

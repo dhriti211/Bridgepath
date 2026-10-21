@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { ENGLISH_TESTS, EXAMPLES, PROFESSIONS, STATES } from '../data'
+import { Field, input } from './fields'
 
 const EMPTY = {
   profession: 'nurse', country: '', degree: '', years_experience: 0,
   target_state: 'Arizona', english_test_type: '', english_test_score: '', notes: '',
 }
 
-const input =
-  'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20'
 
 export default function IntakeForm({ onSubmit, initial }) {
   const [form, setForm] = useState(initial ?? EMPTY)
@@ -89,14 +88,5 @@ export default function IntakeForm({ onSubmit, initial }) {
         Takes about a minute. We search official licensing sources live.
       </p>
     </form>
-  )
-}
-
-function Field({ label, children, className = '' }) {
-  return (
-    <label className={`block ${className}`}>
-      <span className="mb-1.5 block text-sm font-medium text-ink">{label}</span>
-      {children}
-    </label>
   )
 }

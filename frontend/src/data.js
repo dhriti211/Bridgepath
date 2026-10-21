@@ -45,8 +45,49 @@ export const EXAMPLES = [
   },
 ]
 
+export const DEGREE_LEVELS = ["Bachelor's", "Master's", 'PhD']
+
+export const STAGES = [
+  { value: 'studying', label: 'Still studying (F-1)' },
+  { value: 'opt', label: 'On OPT' },
+  { value: 'stem_opt', label: 'On STEM OPT' },
+  { value: 'other', label: 'Something else' },
+]
+
+// One-click example student profiles for the demo.
+export const STUDENT_EXAMPLES = [
+  {
+    label: 'MS Computer Science → software engineer',
+    form: {
+      degree_level: "Master's", major: 'Computer Science', school: '', country: 'India', stem: 'yes',
+      stage: 'studying', program_end: '2027-05-15', opt_end: '', target_role: 'Software engineer',
+      target_state: 'Anywhere in the US',
+      notes: 'Summer internship at a fintech startup on CPT. Backend work in Go and Python.',
+    },
+  },
+  {
+    label: 'MS Data Science on OPT → data engineer',
+    form: {
+      degree_level: "Master's", major: 'Data Science', school: '', country: 'China', stem: 'yes',
+      stage: 'opt', program_end: '2026-05-10', opt_end: '2027-07-01', target_role: 'Data engineer',
+      target_state: 'Arizona',
+      notes: 'Working as a data analyst on OPT at a company that does not sponsor H-1B.',
+    },
+  },
+  {
+    label: 'BS Mechanical Engineering → design engineer',
+    form: {
+      degree_level: "Bachelor's", major: 'Mechanical Engineering', school: '', country: 'Nigeria', stem: 'yes',
+      stage: 'studying', program_end: '2027-12-15', opt_end: '', target_role: 'Mechanical design engineer',
+      target_state: 'Texas',
+      notes: 'SolidWorks and FEA projects, Formula SAE team lead.',
+    },
+  },
+]
+
 export const STEP_LABELS = {
   intake: 'Understanding your background',
+  dates: 'Working out your key dates',
   equivalency: 'Matching your degree to the US',
   research: 'Searching official sources',
   synthesis: 'Reading the requirements',
@@ -56,7 +97,8 @@ export const STEP_LABELS = {
 
 export const STEP_MODELS = {
   intake: 'Nemotron Nano',
-  equivalency: 'Nemotron Ultra',
+  dates: 'F-1 rules',
+  equivalency: 'Nemotron Super',
   research: 'Tavily',
   synthesis: 'Nemotron Super',
   plan: 'Nemotron Ultra',
