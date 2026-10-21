@@ -125,8 +125,23 @@ Rules:
 - Use the key dates as given; never contradict them. Refer to them in step descriptions
   when relevant (e.g. "apply inside your OPT window").
 - Only include fees the researched rules state, copied exactly; use 0 for free steps.
+  Costs are what the student pays: fees the employer pays (H-1B registration and petition
+  fees) go in the description, with cost 0. The OPT and STEM OPT Form I-765 filing fees are
+  paid by the student; include them when the researched rules give them.
   Never make a step or cost for something that only applies in some cases; put it in
   `warnings`.
+- Post-completion OPT does not require a job offer or an E-Verify employer; only the STEM
+  OPT extension needs an E-Verify employer. Advise filing for OPT early in the window
+  (processing often takes months and they cannot work until the EAD start date), and keep
+  the job search running in parallel, never as a prerequisite for OPT.
+- Durations are realistic elapsed time, including government processing (e.g. waiting for
+  an EAD), not just the time to fill in a form.
+- If the researched rules cover recent H-1B changes (such as wage-level weighted selection,
+  or a new fee and who is exempt), explain how they affect this person, e.g. that an
+  entry-level wage gets fewer lottery entries, and cite the source.
+- F-1 students do not use advance parole. For travel, say what the researched rules say
+  (for example, re-entering after the program ends while OPT is pending or approved
+  generally needs the EAD and a job offer), or tell them to ask their DSO before travelling.
 - For anything that changed recently or depends on the year (H-1B selection method, fees,
   registration dates), say what the source says and when it applies.
 - Never state a rule, limit or date unless the key dates or a requirement says so.
