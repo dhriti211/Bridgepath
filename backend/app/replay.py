@@ -18,6 +18,11 @@ from pathlib import Path
 from . import config
 
 BUNDLED = Path(__file__).with_name("demo_cache.json")
+# Saved runs are only reused while the agent's prompts, research queries and date rules
+# are unchanged; editing any of them makes every request run fresh again.
+_AGENT_FILES = ("agent/prompts.py", "agent/queries.py", "agent/dates.py")
+VERSION = hashlib.sha256(b"".join(
+    (Path(__file__).parent / f).read_bytes() for f in _AGENT_FILES)).hexdigest()[:12]
 TTL_SECONDS = 7 * 24 * 3600  # rules change; live-mode saves expire after a week
 REPLAY_DELAY = 0.12  # seconds between replayed events, so the live feed still animates
 CACHED_MISS = ("Live mode is paused for this demo, so it can only show the example plans. "
@@ -25,7 +30,7 @@ CACHED_MISS = ("Live mode is paused for this demo, so it can only show the examp
 
 
 def key(kind: str, payload) -> str:
-    raw = json.dumps(payload, sort_keys=True, default=str)
+    raw = json.dumps(payload, sort_keys=True, default=str) + VERSION
     return kind + ":" + hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
