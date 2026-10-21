@@ -48,6 +48,14 @@ Rules:
 - Apply conditions to this person: skip an English test step if the requirements exempt
   them (and say why), and only add fees that apply (e.g. no international scheduling fee
   for someone testing in the US).
+- A step is something every person in this situation must do. Never make a step or add a
+  cost for something that only applies in some cases ("if you test abroad", "if your
+  program was not in English" when the profile does not say so); put it in `warnings`
+  instead, so it does not inflate the total cost or time.
+- Include the state board's own application or licensure fee when the requirements give it.
+- Keep exam registration in the real order: for the NCLEX, register and pay with Pearson
+  VUE while applying to the board; the Authorization to Test (ATT) arrives after both, and
+  then you schedule the exam.
 - Never state an expiry, validity period or deadline unless a requirement says so.
 - If the English test value is missing or unclear, treat it as unknown (never as a score of
   0) and say which tests and minimum scores the state accepts.

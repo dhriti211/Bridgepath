@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { hostOf } from '../util'
 
 const usd = (n) => '$' + Math.round(n).toLocaleString('en-US')
@@ -7,10 +8,21 @@ const months = (w) => Math.max(1, Math.round(w / 4.33))
 export default function Roadmap({ roadmap, profile }) {
   const { steps } = roadmap
   const index = Object.fromEntries(steps.map((s, i) => [s.id, i + 1]))
+  const storeKey = 'bridgepath-done:' + roadmap.headline + steps.map((s) => s.id).join()
+  const [done, setDone] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(storeKey)) || [] } catch { return [] }
+  })
+  const toggle = (id) => {
+    const next = done.includes(id) ? done.filter((d) => d !== id) : [...done, id]
+    setDone(next)
+    try { localStorage.setItem(storeKey, JSON.stringify(next)) } catch { /* storage unavailable */ }
+  }
+  const count = steps.filter((s) => done.includes(s.id)).length
+  const pct = steps.length ? Math.round((count / steps.length) * 100) : 0
 
   return (
     <div className="space-y-6">
-      <section className="print-break rounded-2xl bg-brand p-6 text-white shadow-sm sm:p-8">
+      <section className="fade-up print-break rounded-3xl bg-gradient-to-br from-brand to-brand-dark p-6 text-white shadow-sm sm:p-8">
         <p className="text-sm font-medium text-white/80">
           Your path as a {profile?.degree} holder from {profile?.country} → {profile?.target_state}
         </p>
@@ -23,16 +35,32 @@ export default function Roadmap({ roadmap, profile }) {
       </section>
 
       <section>
-        <h3 className="mb-4 font-display text-xl">Your steps</h3>
+        <div className="no-print sticky top-[65px] z-10 -mx-1 mb-4 rounded-xl bg-paper/90 px-1 py-2 backdrop-blur">
+          <div className="flex items-baseline justify-between">
+            <h3 className="font-display text-xl">Your steps</h3>
+            <span className="text-sm text-muted">{count} of {steps.length} done</span>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-brand-soft">
+            <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${pct}%` }} />
+          </div>
+          {count === steps.length && steps.length > 0 && (
+            <p className="fade-up mt-2 text-sm font-medium text-brand">🎉 Every step done. Congratulations, you made it!</p>
+          )}
+        </div>
+        <h3 className="mb-4 hidden font-display text-xl print:block">Your steps</h3>
         <ol className="relative space-y-4 border-l-2 border-brand-soft pl-6 sm:ml-3">
-          {steps.map((s, i) => (
-            <li key={s.id} className="print-break relative">
-              <span className="absolute -left-[37px] flex h-7 w-7 items-center justify-center rounded-full bg-brand text-sm font-semibold text-white ring-4 ring-paper">
-                {i + 1}
-              </span>
-              <div className="rounded-xl border border-line bg-card p-5 shadow-sm">
+          {steps.map((s, i) => {
+            const isDone = done.includes(s.id)
+            return (
+            <li key={s.id} className="fade-up print-break relative" style={{ animationDelay: `${i * 90}ms` }}>
+              <button type="button" onClick={() => toggle(s.id)} aria-pressed={isDone}
+                title={isDone ? 'Mark as not done' : 'Mark as done'}
+                className={`absolute -left-[37px] flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-4 ring-paper transition hover:scale-110 ${isDone ? 'bg-accent text-white' : 'bg-brand text-white'}`}>
+                {isDone ? '✓' : i + 1}
+              </button>
+              <div className={`rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md ${isDone ? 'border-accent/40 opacity-75' : 'border-line hover:border-brand/50'}`}>
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h4 className="font-semibold text-ink">{s.title}</h4>
+                  <h4 className={`font-semibold text-ink ${isDone ? 'line-through decoration-accent/60' : ''}`}>{s.title}</h4>
                   <div className="flex flex-wrap gap-1.5 text-xs">
                     <Chip>{s.cost_usd_max > 0 ? range(s.cost_usd_min, s.cost_usd_max, usd) : 'Free'}</Chip>
                     <Chip>{range(s.duration_weeks_min, s.duration_weeks_max)} weeks</Chip>
@@ -69,9 +97,14 @@ export default function Roadmap({ roadmap, profile }) {
                     <span className="text-accent">No source found for this step. Confirm with the state board.</span>
                   )}
                 </div>
+                <label className="no-print mt-4 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted hover:text-ink">
+                  <input type="checkbox" checked={isDone} onChange={() => toggle(s.id)} className="h-4 w-4 accent-[#0f766e]" />
+                  I've done this
+                </label>
               </div>
             </li>
-          ))}
+            )
+          })}
         </ol>
       </section>
 
@@ -81,7 +114,7 @@ export default function Roadmap({ roadmap, profile }) {
           <p className="mb-4 text-sm text-muted">Jobs that use your skills and build US experience while you get licensed.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {roadmap.bridge_jobs.map((j) => (
-              <div key={j.title} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+              <div key={j.title} className="rounded-xl border border-line bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-md">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="font-semibold">{j.title}</h4>
                   {j.typical_pay && <span className="shrink-0 text-xs font-medium text-brand">{j.typical_pay}</span>}
