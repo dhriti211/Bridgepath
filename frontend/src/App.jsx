@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { streamRoadmap } from './api'
 import AgentFeed from './components/AgentFeed'
 import Chat from './components/Chat'
-import IntakeForm from './components/IntakeForm'
+import Landing from './components/Landing'
 import Roadmap from './components/Roadmap'
 
 export default function App() {
@@ -41,12 +41,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="no-print border-b border-line bg-paper/80 backdrop-blur">
+      <header className="no-print sticky top-0 z-20 border-b border-line bg-paper/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <button onClick={reset} className="flex items-center gap-2">
             <Logo />
             <span className="font-display text-xl font-semibold">Bridgepath</span>
           </button>
+          {phase === 'form' && (
+            <nav className="flex items-center gap-1 text-sm sm:gap-4">
+              <a href="#how" className="hidden rounded-full px-3 py-2 text-muted hover:text-ink sm:inline">How it works</a>
+              <a href="#start" className="rounded-full bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark">Get started</a>
+            </nav>
+          )}
           {phase === 'done' && (
             <div className="flex gap-2">
               <button onClick={() => window.print()} className="rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium hover:border-brand">Download PDF</button>
@@ -57,10 +63,7 @@ export default function App() {
       </header>
 
       {phase === 'form' ? (
-        <main className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_1.1fr] lg:py-16">
-          <Hero />
-          <IntakeForm onSubmit={start} />
-        </main>
+        <Landing onSubmit={start} />
       ) : (
         <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[320px_1fr]">
           <aside className="no-print space-y-6 lg:sticky lg:top-6 lg:self-start">
@@ -92,43 +95,29 @@ export default function App() {
   )
 }
 
-function Hero() {
-  return (
-    <div className="flex flex-col justify-center">
-      <p className="mb-4 inline-flex w-fit rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent">
-        For nurses, engineers and teachers trained abroad
-      </p>
-      <h1 className="font-display text-4xl leading-tight sm:text-5xl">
-        Your degree still counts. Here's your path back to your profession.
-      </h1>
-      <p className="mt-5 text-lg leading-relaxed text-muted">
-        About 2 million college-educated immigrants in the US work below their training, often because
-        the relicensing process is a maze. Bridgepath reads the official rules for your state and builds
-        a step-by-step plan with costs, timelines and sources.
-      </p>
-      <ul className="mt-8 space-y-3 text-sm">
-        {[
-          ['Personal', 'Built from your degree, country, experience and state.'],
-          ['Sourced', 'Every step links to the official board or exam site it came from.'],
-          ['Practical', 'Costs, time, documents, and jobs you can do while you relicense.'],
-        ].map(([t, d]) => (
-          <li key={t} className="flex gap-3">
-            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs text-brand">✓</span>
-            <span><strong className="font-semibold">{t}.</strong> <span className="text-muted">{d}</span></span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-8 text-xs text-muted">Source: Migration Policy Institute, 2021.</p>
-    </div>
-  )
-}
+const TIPS = [
+  'Most states accept more than one credential evaluation service. Your roadmap names the options your state accepts.',
+  'Licensing fees and exam rules change. Every step links to the page it came from so you can check.',
+  'You can often work in a related job while you relicense. Look for "Work you can do now" in your roadmap.',
+]
 
 function Waiting() {
+  const [tip, setTip] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setTip((i) => (i + 1) % TIPS.length), 6000)
+    return () => clearInterval(t)
+  }, [])
   return (
-    <div className="rounded-2xl border border-line bg-card p-8 text-center shadow-sm">
-      <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
-      <h2 className="mt-4 font-display text-xl">Building your roadmap</h2>
+    <div className="fade-up rounded-3xl border border-line bg-card p-8 text-center shadow-sm sm:p-10">
+      <div className="relative mx-auto h-14 w-14">
+        <div className="absolute inset-0 animate-ping rounded-full bg-brand-soft" />
+        <div className="relative h-14 w-14 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
+      </div>
+      <h2 className="mt-5 font-display text-2xl">Building your roadmap</h2>
       <p className="mt-1 text-sm text-muted">We're reading official licensing sources for you. This takes about a minute.</p>
+      <p key={tip} className="fade-up mx-auto mt-6 max-w-md rounded-xl bg-paper px-4 py-3 text-sm text-ink">
+        <span className="font-medium text-brand">Did you know? </span>{TIPS[tip]}
+      </p>
     </div>
   )
 }

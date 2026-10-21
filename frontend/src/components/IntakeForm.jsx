@@ -9,8 +9,8 @@ const EMPTY = {
 const input =
   'w-full rounded-lg border border-line bg-white px-3 py-2.5 text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20'
 
-export default function IntakeForm({ onSubmit }) {
-  const [form, setForm] = useState(EMPTY)
+export default function IntakeForm({ onSubmit, initial }) {
+  const [form, setForm] = useState(initial ?? EMPTY)
   const [cv, setCv] = useState(null)
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
@@ -25,7 +25,7 @@ export default function IntakeForm({ onSubmit }) {
   }
 
   return (
-    <form onSubmit={submit} className="rounded-2xl border border-line bg-card p-6 shadow-sm sm:p-8">
+    <form onSubmit={submit} className="rounded-3xl border border-line bg-card p-6 shadow-xl shadow-ink/5 sm:p-8">
       <div className="mb-6">
         <p className="mb-2 text-sm font-medium text-muted">Try an example</p>
         <div className="flex flex-wrap gap-2">
