@@ -67,6 +67,7 @@ class Step(BaseModel):
     depends_on: list[str] = []
     documents: list[str] = []
     source_url: str = ""
+    kind: str = "official"  # "career" steps (resume, job search) need no rule source
     verified: bool = False  # link came from real search results
     official: bool = False  # and that link is a government or official exam/evaluation body
 

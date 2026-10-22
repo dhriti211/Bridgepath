@@ -143,3 +143,15 @@ def test_student_queries_fill_role_and_drop_anywhere():
                                          today=date(2026, 10, 21))]
     assert "H-1B cap registration 2027" in " ".join(qs)
     assert any(q == "Data engineer jobs that sponsor H-1B" for q in qs)
+
+
+def test_stem_opt_never_waits_on_the_lottery():
+    from app.agent.pipeline import PlanOut
+    from app.agent.student import untangle
+    from app.models import Step
+    plan = PlanOut(headline="h", steps=[
+        Step(id="s1", title="Employer registers you for the H-1B lottery", description=""),
+        Step(id="s2", title="Receive your EAD", description=""),
+        Step(id="s3", title="Apply for the STEM OPT extension", description="", depends_on=["s2", "s1"]),
+    ])
+    assert untangle(plan).steps[2].depends_on == ["s2"]

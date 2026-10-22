@@ -91,6 +91,8 @@ Open http://localhost:5173.
 
 **Tests**: `cd backend && pytest` (no API keys needed; the LLM and search are scripted).
 
+**Scenario check**: `python scripts/check_scenarios.py` runs six very different students (MS CS, BS mechanical in Texas, a non-STEM MBA, a graduate on OPT, one on STEM OPT, a PhD aiming for a cap-exempt university) through the real agent and checks each roadmap automatically: only real fees, STEM OPT never waiting on the lottery, no STEM steps for a non-STEM degree, proposed rules never shown as in effect, and a source for every visa step.
+
 ## Deploy
 
 The `Dockerfile` builds the frontend and serves it from the FastAPI app on one port. Set `NEBIUS_API_KEY` and `TAVILY_API_KEY` as environment variables on your host (for example Render, or Nebius Serverless Endpoints).
