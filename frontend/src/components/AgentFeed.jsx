@@ -3,7 +3,7 @@ import { hostOf } from '../util'
 
 const ORDER = {
   license: ['intake', 'equivalency', 'research', 'synthesis', 'plan', 'verify'],
-  student: ['intake', 'dates', 'research', 'synthesis', 'plan', 'verify'],
+  student: ['intake', 'dates', 'research', 'policy', 'synthesis', 'plan', 'verify'],
 }
 
 export default function AgentFeed({ mode = 'license', steps, sources, compact }) {

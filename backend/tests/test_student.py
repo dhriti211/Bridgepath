@@ -5,7 +5,8 @@ import json
 from datetime import date
 
 from app.agent import prompts
-from app.agent.dates import student_deadlines
+from app.agent.dates import h1b_seasons, student_deadlines
+from app.agent.facts import CHECKED_FACTS
 from app.agent.queries import student_queries
 from app.agent.student import StudentAgent
 from app.models import Goal, Source, StudentForm, StudentProfile
@@ -44,8 +45,19 @@ class StudentLLM(ScriptedLLM):
 
 
 class FakeSearch:
-    async def search(self, query, max_results=5):
+    def __init__(self):
+        self.domains = []
+
+    async def search(self, query, max_results=5, domains=None):
+        self.domains.append(domains)
         return [Source(title="OPT | USCIS", url=USCIS, snippet="OPT rules", official=True)]
+
+    async def extract(self, urls, query=""):
+        return {u: "Full OPT page text" for u in urls}
+
+    async def news(self, query, days=30, max_results=6):
+        return [Source(title="DHS proposes OPT fee", url="https://news.example.com/a",
+                       published="2026-10-09")]
 
 
 def profile(**kw) -> StudentProfile:
@@ -78,6 +90,33 @@ def test_student_roadmap_end_to_end():
     assert roadmap["total_cost_usd_max"] == 520
     labels = [d["label"] for d in roadmap["deadlines"]]
     assert "Apply for post-completion OPT" in labels
+    assert "Ask your DSO to recommend OPT" in labels
+    assert roadmap["h1b_seasons"] and roadmap["policy"] and roadmap["news"][0]["published"]
+    statuses = {p["status"] for p in roadmap["policy"]}
+    assert {"in effect", "proposed"} <= statuses
+
+
+def test_rules_searched_on_official_sites_and_checked_facts_given_to_model():
+    llm, search = StudentLLM(), FakeSearch()
+    agent = StudentAgent(llm, search)
+
+    async def collect():
+        return [e async for e in agent.run(profile(), GOAL)]
+
+    asyncio.run(collect())
+    assert any(search.domains) and None in search.domains  # rules official-only, employers open
+    assert all("uscis.gov" in d for d in search.domains if d)
+    assert CHECKED_FACTS and all(f.official for f in CHECKED_FACTS)
+    assert any("$470" in f.snippet for f in CHECKED_FACTS)
+
+
+def test_h1b_seasons_count_lottery_chances():
+    today = date(2026, 10, 22)
+    stem = [s.label for s in h1b_seasons(profile(), today)]
+    assert stem == ["March 2027", "March 2028", "March 2029", "March 2030"]
+    assert [s.label for s in h1b_seasons(profile(stem="no"), today)] == ["March 2027", "March 2028"]
+    on_stem = h1b_seasons(profile(stage="stem_opt", opt_end="2028-01-10"), today)
+    assert [s.label for s in on_stem] == ["March 2027"]
 
 
 def test_opt_window_from_program_end():
@@ -100,6 +139,7 @@ def test_stem_opt_window_only_when_on_opt():
 
 
 def test_student_queries_fill_role_and_drop_anywhere():
-    qs = student_queries(profile(target_state="Anywhere in the US"), GOAL, today=date(2026, 10, 21))
+    qs = [q for q, _ in student_queries(profile(target_state="Anywhere in the US"), GOAL,
+                                         today=date(2026, 10, 21))]
     assert "H-1B cap registration 2027" in " ".join(qs)
     assert any(q == "Data engineer jobs that sponsor H-1B" for q in qs)

@@ -46,28 +46,36 @@ def research_queries(profile: Profile) -> list[str]:
     ]
 
 
-_STUDENT_QUERIES = [
-    "USCIS optional practical training OPT F-1 students post-completion rules",
-    "USCIS STEM OPT extension requirements E-Verify employer Form I-983",
-    "Study in the States OPT STEM OPT unemployment days reporting requirements",
-    "USCIS Form I-765 filing fee F-1 optional practical training online paper",
-    "USCIS H-1B cap registration {year} dates and selection process",
-    "USCIS H-1B weighted selection wage level final rule",
-    "USCIS H-1B $100,000 fee proclamation guidance change of status F-1 students",
-    "Study in the States travel while OPT application pending re-entry EAD job offer",
-    "cap-exempt H-1B employers universities nonprofit research organizations",
+# Rules, fees and dates: searched on government sites only (see search.OFFICIAL_DOMAINS).
+_STUDENT_RULE_QUERIES = [
+    "optional practical training OPT F-1 students post-completion rules",
+    "STEM OPT extension requirements E-Verify employer Form I-983",
+    "OPT STEM OPT unemployment days reporting requirements",
+    "H-1B cap registration {year} dates and selection process",
+    "H-1B weighted selection wage level",
+    "H-1B cap-gap extension F-1 students",
+    "travel while OPT application pending re-entry EAD job offer",
     "DHS STEM designated degree program list {major}",
+]
+
+# Employers and career paths: the whole web, since no official site lists who sponsors.
+_STUDENT_OPEN_QUERIES = [
+    "cap-exempt H-1B employers universities nonprofit research organizations",
     "{role} jobs that sponsor H-1B {state}",
     "{goal} international student F-1",
 ]
 
 
-def student_queries(profile: StudentProfile, goal: Goal, today: date | None = None) -> list[str]:
+def student_queries(profile: StudentProfile, goal: Goal,
+                    today: date | None = None) -> list[tuple[str, bool]]:
+    """(query, official_only) pairs for the student research step."""
     today = today or date.today()
     year = today.year if today.month < 4 else today.year + 1  # next H-1B registration season
     state = "" if profile.target_state.lower().startswith("anywhere") else profile.target_state
-    return [
-        " ".join(q.format(year=year, major=profile.major, role=profile.target_role,
-                          state=state, goal=goal.title).split())
-        for q in _STUDENT_QUERIES
-    ]
+
+    def fill(q: str) -> str:
+        return " ".join(q.format(year=year, major=profile.major, role=profile.target_role,
+                                 state=state, goal=goal.title).split())
+
+    return ([(fill(q), True) for q in _STUDENT_RULE_QUERIES]
+            + [(fill(q), False) for q in _STUDENT_OPEN_QUERIES])

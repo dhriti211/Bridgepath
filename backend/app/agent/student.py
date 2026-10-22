@@ -13,9 +13,10 @@ from datetime import date
 from ..guard import BudgetExceeded
 from ..llm import LLM
 from ..models import Deadline, Goal, Goals, Requirement, Source, StudentForm, StudentProfile
-from ..search import Search
+from ..search import OFFICIAL_DOMAINS, Search
 from . import prompts
-from .dates import student_deadlines
+from .dates import h1b_seasons, student_deadlines
+from .facts import CHECKED_FACTS, NEWS_QUERY, POLICY_WATCH
 from .pipeline import PlanOut, Requirements, finalize, format_sources, plural, step
 from .queries import student_queries
 
@@ -53,33 +54,59 @@ class StudentAgent:
         dated = sum(bool(d.end) for d in deadlines)
         yield step("dates", "done", f"Worked out {plural(dated, 'key date')} from your program dates")
 
-        # 2. Research (Tavily), queries in parallel, results streamed as they land.
-        yield step("research", "running", "Searching USCIS and other official sources")
-        all_sources: dict[str, Source] = {}
+        # 2. Research (Tavily). Rules come from government sites only; employers from the whole web.
+        #    Hand-checked facts (fees, the H-1B lottery) go first so the model never guesses them.
+        yield step("research", "running", "Searching USCIS, DHS and DOL")
+        found: dict[str, Source] = {}
 
-        async def search_one(q: str) -> tuple[str, list[Source]]:
-            return q, await self.search.search(q)
+        async def search_one(q: str, official: bool) -> tuple[str, list[Source]]:
+            return q, await self.search.search(q, domains=OFFICIAL_DOMAINS if official else None)
 
-        for done in asyncio.as_completed([search_one(q) for q in student_queries(profile, goal)]):
+        news_task = asyncio.create_task(self.search.news(NEWS_QUERY))
+        searches = [search_one(q, official) for q, official in student_queries(profile, goal)]
+        for done in asyncio.as_completed(searches):
             q, sources = await done
             for s in sources:
-                all_sources.setdefault(s.url, s)
+                found.setdefault(s.url, s)
             yield {"type": "sources", "query": q, "sources": [s.model_dump() for s in sources]}
-        yield step("research", "done", f"Found {plural(len(all_sources), 'source')}")
 
-        # 3. Synthesis (Super)
+        # Read the top official pages in full, not just the search snippet.
+        top = [u for u, s in found.items() if s.official][:4]
+        if top:
+            yield step("research", "running", f"Reading {plural(len(top), 'official page')} in full")
+            pages = await self.search.extract(top, query=f"F-1 OPT STEM OPT H-1B {goal.title}")
+            for u, text in pages.items():
+                if u in found and text:
+                    found[u] = found[u].model_copy(update={"snippet": text})
+
+        all_sources = {s.url: s for s in CHECKED_FACTS}
+        all_sources.update({u: s for u, s in found.items() if u not in all_sources})
+        yield step("research", "done", f"Found {plural(len(found), 'source')}, plus "
+                   f"{plural(len(CHECKED_FACTS), 'checked fact')}")
+
+        # 3. Recent changes: the curated policy list, plus live news so nothing new is missed.
+        yield step("policy", "running", "Checking for recent rule changes")
+        try:
+            news = await news_task
+        except Exception:  # news is a bonus; never fail the roadmap over it
+            news = []
+        yield step("policy", "done", f"{plural(len(POLICY_WATCH), 'rule change')} to watch, "
+                   f"{plural(len(news), 'news article')} this month")
+
+        # 4. Synthesis (Super)
         yield step("synthesis", "running", "Reading the current rules")
         requirements = await self.synthesize(profile, goal, list(all_sources.values()))
         yield step("synthesis", "done", f"Found {plural(len(requirements), 'rule')} that apply to you")
 
-        # 4. Planning (Ultra)
+        # 5. Planning (Ultra)
         yield step("plan", "running", "Building your step-by-step roadmap")
         plan = await self.plan(profile, goal, deadlines, requirements)
         yield step("plan", "done", f"{plural(len(plan.steps), 'step')} planned")
 
-        # 5. Verification (deterministic)
+        # 6. Verification (deterministic)
         yield step("verify", "running", "Checking every step against its source")
-        roadmap = finalize(plan, goal.visa_path, all_sources, mode="student", deadlines=deadlines)
+        roadmap = finalize(plan, goal.visa_path, all_sources, mode="student", deadlines=deadlines,
+                           h1b_seasons=h1b_seasons(profile), policy=POLICY_WATCH, news=news)
         official = sum(s.official for s in roadmap.steps)
         verified = sum(s.verified for s in roadmap.steps)
         yield step("verify", "done", f"{official} of {len(roadmap.steps)} steps backed by an official "
@@ -101,6 +128,9 @@ class StudentAgent:
             "profile": profile.model_dump(),
             "goal": goal.model_dump(),
             "key_dates": [d.model_dump() for d in deadlines],
+            "h1b_lottery_seasons": [h.model_dump() for h in h1b_seasons(profile)],
+            "checked_facts": [f.model_dump(include={"title", "url", "snippet"}) for f in CHECKED_FACTS],
+            "policy_status": [p.model_dump() for p in POLICY_WATCH],
             "requirements": [r.model_dump() for r in requirements],
         }, indent=2)
         return await self.llm.chat_json("reasoning", prompts.STUDENT_PLAN, user, PlanOut)

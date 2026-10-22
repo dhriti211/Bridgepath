@@ -7,7 +7,7 @@ the H-1B registration dates) is marked approximate and checked by the live resea
 
 from datetime import date, timedelta
 
-from ..models import Deadline, StudentProfile
+from ..models import Deadline, H1BSeason, StudentProfile
 
 
 def parse(value: str) -> date | None:
@@ -25,6 +25,14 @@ def student_deadlines(profile: StudentProfile, today: date | None = None) -> lis
     out: list[Deadline] = []
 
     if profile.stage == "studying" and end:
+        out.append(Deadline(
+            label="Ask your DSO to recommend OPT",
+            start=(end - timedelta(days=120)).isoformat(),
+            end=(end + timedelta(days=30)).isoformat(),
+            detail="Your DSO enters the OPT recommendation in SEVIS, and you must file within 30 days "
+                   "of it. Ask a few weeks before your OPT window opens, so the recommendation is "
+                   "ready on day one but does not expire before you can file.",
+        ))
         out.append(Deadline(
             label="Apply for post-completion OPT",
             start=(end - timedelta(days=90)).isoformat(),
@@ -53,15 +61,17 @@ def student_deadlines(profile: StudentProfile, today: date | None = None) -> lis
             label="Apply for the 24-month STEM OPT extension",
             start=(opt_end - timedelta(days=90)).isoformat(),
             end=opt_end.isoformat(),
-            detail="File Form I-765 with a Form I-983 training plan from an E-Verify employer up "
-                   "to 90 days before your current OPT ends. Filing on time lets you keep working "
-                   "for up to 180 days while it is pending.",
+            detail="First complete Form I-983 (training plan) with an E-Verify employer and get a "
+                   "new STEM OPT recommendation from your DSO. Then file Form I-765 within 60 days of "
+                   "that recommendation and before your current OPT ends. Filing on time lets you "
+                   "keep working for up to 180 days while it is pending.",
         ))
     elif stem and profile.stage == "studying":
         out.append(Deadline(
             label="STEM OPT extension (later)",
             detail="If your degree is on the DHS STEM list, you can extend OPT by 24 months. You "
-                   "apply up to 90 days before your first OPT ends, and you need an E-Verify employer.",
+                   "apply up to 90 days before your first OPT ends, with a Form I-983 training plan "
+                   "from an E-Verify employer and a new DSO recommendation.",
         ))
 
     if profile.stage == "stem_opt":
@@ -88,3 +98,44 @@ def student_deadlines(profile: StudentProfile, today: date | None = None) -> lis
     ))
 
     return sorted(out, key=lambda d: (d.start or d.end or "9999", d.label))
+
+
+def _add_months(d: date, months: int) -> date:
+    y, m = divmod(d.month - 1 + months, 12)
+    return date(d.year + y, m + 1, min(d.day, 28))
+
+
+def work_authorization_end(profile: StudentProfile) -> date | None:
+    """Roughly when the student's F-1 work time runs out, if every extension they qualify for is used."""
+    stem = profile.stem != "no"
+    if profile.stage == "studying":
+        end = parse(profile.program_end)
+        return end and _add_months(end, 36 if stem else 12)
+    opt_end = parse(profile.opt_end)
+    if profile.stage == "opt":
+        return opt_end and (_add_months(opt_end, 24) if stem else opt_end)
+    if profile.stage == "stem_opt":
+        return opt_end
+    return None
+
+
+def h1b_seasons(profile: StudentProfile, today: date | None = None) -> list[H1BSeason]:
+    """The H-1B lottery seasons (March each year) the student can be entered in while authorized.
+
+    An employer must file the petition from April 1 while the student is still in status; cap-gap
+    then carries them to October 1. So a season counts if work time lasts until that April.
+    """
+    today = today or date.today()
+    last = work_authorization_end(profile)
+    if not last:
+        return []
+    out = []
+    year = today.year if today < date(today.year, 4, 1) else today.year + 1
+    while date(year, 4, 1) <= last:
+        n = len(out) + 1
+        note = ("Your first chance" if n == 1 else f"Chance {n}")
+        if profile.stage == "studying" and parse(profile.program_end) and date(year, 3, 1) < parse(profile.program_end):
+            note += ": before you graduate, an employer can still register you"
+        out.append(H1BSeason(label=f"March {year}", fiscal_year=year + 1, note=note))
+        year += 1
+    return out

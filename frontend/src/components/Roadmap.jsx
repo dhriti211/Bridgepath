@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { downloadIcs } from '../calendar'
 import { hostOf } from '../util'
 
 const usd = (n) => '$' + Math.round(n).toLocaleString('en-US')
@@ -40,6 +41,8 @@ export default function Roadmap({ roadmap, profile }) {
       </section>
 
       {roadmap.deadlines?.length > 0 && <Deadlines deadlines={roadmap.deadlines} />}
+
+      {roadmap.h1b_seasons?.length > 0 && <H1BChances seasons={roadmap.h1b_seasons} />}
 
       <section>
         <div className="no-print sticky top-[65px] z-10 -mx-1 mb-4 rounded-xl bg-paper/90 px-1 py-2 backdrop-blur">
@@ -146,6 +149,8 @@ export default function Roadmap({ roadmap, profile }) {
         </section>
       )}
 
+      {(roadmap.policy?.length > 0 || roadmap.news?.length > 0) && <PolicyWatch policy={roadmap.policy || []} news={roadmap.news || []} />}
+
       {roadmap.sources.length > 0 && (
         <section className="print-break">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Sources</h3>
@@ -191,8 +196,18 @@ function countdown(d) {
 function Deadlines({ deadlines }) {
   return (
     <section className="print-break">
-      <h3 className="mb-1 font-display text-xl">Your key dates</h3>
-      <p className="mb-4 text-sm text-muted">Worked out from your program dates using the F-1 rules.</p>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="mb-1 font-display text-xl">Your key dates</h3>
+          <p className="text-sm text-muted">Worked out from your program dates using the F-1 rules.</p>
+        </div>
+        {deadlines.some((d) => d.start || d.end) && (
+          <button type="button" onClick={() => downloadIcs(deadlines)}
+            className="no-print rounded-full border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition hover:-translate-y-0.5 hover:border-brand hover:text-brand">
+            📅 Add to my calendar
+          </button>
+        )}
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {deadlines.map((d, i) => {
           const c = countdown(d)
@@ -214,6 +229,100 @@ function Deadlines({ deadlines }) {
           )
         })}
       </div>
+    </section>
+  )
+}
+
+const WAGE_LEVELS = [
+  ['Level I', 'Entry level', 1],
+  ['Level II', 'Qualified', 2],
+  ['Level III', 'Experienced', 3],
+  ['Level IV', 'Fully competent', 4],
+]
+
+function H1BChances({ seasons }) {
+  return (
+    <section className="print-break rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
+      <h3 className="font-display text-xl">Your H-1B chances</h3>
+      <p className="mt-1 text-sm text-muted">
+        You can be entered in the H-1B lottery <strong className="text-ink">{seasons.length} time{seasons.length === 1 ? '' : 's'}</strong>{' '}
+        while your F-1 work time lasts, if you use every OPT extension you qualify for. Each March is a new try, and your employer does the registering.
+      </p>
+      <ol className="mt-4 flex flex-wrap gap-2">
+        {seasons.map((s, i) => (
+          <li key={s.label} className={`rounded-xl px-3 py-2 text-sm ${i === 0 ? 'bg-brand text-white' : 'bg-brand-soft text-brand-dark'}`}>
+            <span className="font-semibold">{s.label}</span>
+            <span className={`block text-xs ${i === 0 ? 'text-white/80' : 'text-brand-dark/80'}`}>{s.note} · FY{s.fiscal_year}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-5">
+        <p className="text-sm font-medium">Higher pay means more entries in the lottery</p>
+        <p className="text-xs text-muted">Weighted selection by the job's wage level, in effect since the March 2026 season.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {WAGE_LEVELS.map(([lvl, desc, n]) => (
+            <div key={lvl} className="rounded-xl border border-line p-3">
+              <p className="text-sm font-semibold">{lvl}</p>
+              <p className="text-xs text-muted">{desc}</p>
+              <p className="mt-2 flex gap-1" aria-label={`${n} entr${n === 1 ? 'y' : 'ies'}`}>
+                {[1, 2, 3, 4].map((k) => (
+                  <span key={k} className={`h-2.5 flex-1 rounded-full ${k <= n ? 'bg-brand' : 'bg-brand-soft'}`} />
+                ))}
+              </p>
+              <p className="mt-1 text-xs font-medium text-brand-dark">{n} entr{n === 1 ? 'y' : 'ies'}</p>
+            </div>
+          ))}
+        </div>
+        <a href="https://www.federalregister.gov/documents/2025/12/29/2025-23853/weighted-selection-process-for-registrants-and-petitioners-seeking-to-file-cap-subject-h-1b"
+          target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs font-medium text-brand hover:underline">
+          ✓ Official source: federalregister.gov
+        </a>
+      </div>
+    </section>
+  )
+}
+
+const STATUS_TONE = {
+  'in effect': 'bg-brand text-white',
+  proposed: 'bg-accent-soft text-accent',
+  'blocked by court': 'bg-line text-ink',
+  'struck down': 'bg-line text-muted line-through',
+}
+
+function PolicyWatch({ policy, news }) {
+  return (
+    <section className="print-break">
+      <h3 className="mb-1 font-display text-xl">Policy watch</h3>
+      <p className="mb-4 text-sm text-muted">Recent rule changes and where each one stands today, so you know what actually applies to you.</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {policy.map((p) => (
+          <div key={p.title} className="rounded-xl border border-line bg-card p-4 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <h4 className="font-semibold leading-snug">{p.title}</h4>
+              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_TONE[p.status] || 'bg-line'}`}>{p.status[0].toUpperCase() + p.status.slice(1)}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted">{p.date}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{p.summary}</p>
+            <a href={p.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-medium text-brand hover:underline">
+              Source: {hostOf(p.source_url)}
+            </a>
+          </div>
+        ))}
+      </div>
+      {news.length > 0 && (
+        <div className="mt-5 rounded-xl border border-line bg-card p-4">
+          <p className="text-sm font-semibold">In the news this month</p>
+          <p className="text-xs text-muted">Found live by Tavily. News is not the rule; check the official link before acting.</p>
+          <ul className="mt-3 space-y-2 text-sm">
+            {news.slice(0, 5).map((n) => (
+              <li key={n.url}>
+                <a href={n.url} target="_blank" rel="noreferrer" className="text-brand hover:underline">{n.title || n.url}</a>
+                <span className="text-muted"> · {hostOf(n.url)}{n.published ? ` · ${new Date(n.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   )
 }
