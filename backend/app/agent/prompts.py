@@ -161,7 +161,13 @@ Rules:
 - Keep each duration range realistic and tight: the max at most about 3 times the min.
 - `depends_on` lists the ids of steps that must finish first. Steps that can run in
   parallel should not depend on each other.
-- `documents`: what the person must gather for that step.
+- `documents`: what the person must gather for that step. For H-1B registration the employer
+  registers them using only their passport details; do not list a prevailing wage
+  determination, LCA or E-Verify paperwork for the student.
+- Never make the STEM OPT step depend on an H-1B registration or lottery step: STEM OPT only
+  needs the OPT EAD and an E-Verify employer, whatever happens in the lottery.
+- `kind`: "career" for career steps (resume, portfolio, networking, job search, interviews),
+  "official" for immigration steps. Career steps may have an empty `source_url`.
 - `source_url`: copy the URL from the researched rules that supports the step. Leave it
   empty rather than inventing one.
 - `bridge_jobs`: 3 or 4 kinds of employers or roles to target for this goal and why, with a

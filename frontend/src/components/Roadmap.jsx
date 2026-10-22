@@ -103,6 +103,8 @@ export default function Roadmap({ roadmap, profile }) {
                       <a href={s.source_url} target="_blank" rel="noreferrer" className="underline">{hostOf(s.source_url)}</a>
                       . Double-check with {student ? 'USCIS or your DSO' : 'the state board'}.
                     </span>
+                  ) : s.kind === 'career' ? (
+                    <span className="text-muted">Career step: no official rule needed.</span>
                   ) : (
                     <span className="text-accent">No source found for this step. Confirm with {student ? 'your DSO' : 'the state board'}.</span>
                   )}

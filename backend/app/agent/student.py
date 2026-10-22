@@ -100,17 +100,18 @@ class StudentAgent:
 
         # 5. Planning (Ultra)
         yield step("plan", "running", "Building your step-by-step roadmap")
-        plan = await self.plan(profile, goal, deadlines, requirements)
+        plan = untangle(await self.plan(profile, goal, deadlines, requirements))
         yield step("plan", "done", f"{plural(len(plan.steps), 'step')} planned")
 
         # 6. Verification (deterministic)
         yield step("verify", "running", "Checking every step against its source")
         roadmap = finalize(plan, goal.visa_path, all_sources, mode="student", deadlines=deadlines,
                            h1b_seasons=h1b_seasons(profile), policy=POLICY_WATCH, news=news)
-        official = sum(s.official for s in roadmap.steps)
-        verified = sum(s.verified for s in roadmap.steps)
-        yield step("verify", "done", f"{official} of {len(roadmap.steps)} steps backed by an official "
-                   f"source, {verified - official} by other sites")
+        rules = [s for s in roadmap.steps if s.kind != "career"]
+        official = sum(s.official for s in rules)
+        verified = sum(s.verified for s in rules)
+        yield step("verify", "done", f"{official} of {plural(len(rules), 'visa step')} backed by an "
+                   f"official source, {verified - official} by other sites")
 
         yield {"type": "roadmap", "roadmap": roadmap.model_dump()}
 
@@ -134,3 +135,11 @@ class StudentAgent:
             "requirements": [r.model_dump() for r in requirements],
         }, indent=2)
         return await self.llm.chat_json("reasoning", prompts.STUDENT_PLAN, user, PlanOut)
+
+
+def untangle(plan: PlanOut) -> PlanOut:
+    """STEM OPT never waits on the H-1B lottery; drop that dependency if the model adds it."""
+    lottery = {s.id for s in plan.steps if "H-1B" in s.title and "STEM" not in s.title}
+    steps = [s.model_copy(update={"depends_on": [d for d in s.depends_on if d not in lottery]})
+             if "STEM OPT" in s.title else s for s in plan.steps]
+    return plan.model_copy(update={"steps": steps})

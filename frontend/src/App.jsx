@@ -84,7 +84,7 @@ export default function App() {
           )}
           {phase === 'done' && (
             <div className="flex gap-2">
-              <button onClick={() => window.print()} className="rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium hover:border-brand">Download PDF</button>
+              <button onClick={() => printRoadmap(mode === 'student' ? profile?.target_role : profile?.target_state)} className="rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium hover:border-brand">Download PDF</button>
               <button onClick={reset} className="rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">New roadmap</button>
             </div>
           )}
@@ -170,4 +170,13 @@ function Logo() {
       <path d="M6 22c5-9 15-9 20 0" stroke="white" strokeWidth="3" fill="none" strokeLinecap="round" />
     </svg>
   )
+}
+
+// The browser uses the page title as the PDF's file name.
+function printRoadmap(subject) {
+  const old = document.title
+  const day = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).replace(',', '')
+  document.title = ['Bridgepath roadmap', subject, day].filter(Boolean).join(' - ').replace(/[\\/:*?"<>|]/g, '')
+  window.addEventListener('afterprint', () => { document.title = old }, { once: true })
+  window.print()
 }
