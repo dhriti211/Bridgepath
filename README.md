@@ -111,7 +111,7 @@ Other safeguards:
 - **Ultra only plans.** The most expensive model is used for the planning step only; everything else uses Nano or Super.
 - **Nothing runs in the background.** There are no warm-up calls or scheduled jobs; Nebius and Tavily are only called when someone submits a form.
 
-**Cached demo mode for judging.** Run each example in the app once in live mode, then run `python scripts/export_demo.py` and commit `backend/app/demo_cache.json`. Deploy with `DEMO_MODE=cached`, and the live site replays those runs at no cost.
+**Cached demo mode for judging.** Run each example in the app once in live mode, then run `python scripts/export_demo.py` and commit `backend/app/demo_cache.json`. Deploy with `DEMO_MODE=cached`, and the live site replays those runs at no cost. Saved runs are tied to the current prompts, research queries and date rules: if you change any of them, record and export the examples again.
 
 ## Project structure
 

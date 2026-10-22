@@ -77,3 +77,9 @@ def test_failed_runs_are_not_saved_and_cached_mode_never_runs(db, tmp_path, monk
         yield
     out = collect(store.events("k", boom()))
     assert out[-1]["type"] == "error" and out[-1]["limit"]
+
+
+def test_saved_runs_expire_when_the_agent_changes(monkeypatch):
+    before = replay.key("student", {"a": 1})
+    monkeypatch.setattr(replay, "VERSION", "changed")
+    assert replay.key("student", {"a": 1}) != before
