@@ -24,6 +24,7 @@ from .queries import research_queries
 
 MAX_SOURCES_FOR_SYNTHESIS = 18
 SNIPPET_CHARS = 1200
+OFFICIAL_SNIPPET_CHARS = 3000  # official pages get more room; they carry the rules
 
 
 class Requirements(BaseModel):
@@ -146,7 +147,7 @@ def format_sources(sources: list[Source]) -> str:
     """Search results as numbered, labeled documents for a synthesis prompt."""
     return "\n\n".join(
         f"[{i + 1}] [{'OFFICIAL' if s.official else 'THIRD-PARTY'}] {s.title}\n"
-        f"URL: {s.url}\n{s.snippet[:SNIPPET_CHARS]}"
+        f"URL: {s.url}\n{s.snippet[:OFFICIAL_SNIPPET_CHARS if s.official else SNIPPET_CHARS]}"
         for i, s in enumerate(sources[:MAX_SOURCES_FOR_SYNTHESIS])
     )
 

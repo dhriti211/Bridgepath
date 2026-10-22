@@ -136,14 +136,27 @@ Rules:
   the job search running in parallel, never as a prerequisite for OPT.
 - Durations are realistic elapsed time, including government processing (e.g. waiting for
   an EAD), not just the time to fill in a form.
-- If the researched rules cover recent H-1B changes (such as wage-level weighted selection,
-  or a new fee and who is exempt), explain how they affect this person, e.g. that an
-  entry-level wage gets fewer lottery entries, and cite the source.
+- `checked_facts` were verified by hand against the official pages. They win over any
+  requirement that disagrees; use their numbers exactly and use their URLs as `source_url`.
+  The OPT step's cost is the Form I-765 fee: 470 (online) to 520 (paper).
+- Follow the key dates for order and timing: the DSO recommendation comes a few weeks before
+  the OPT window opens (as the "Ask your DSO" key date says), and the I-765 is filed within 30
+  days of it.
+- H-1B registration happens every March whatever stage the person is in, so place that step
+  at its real date (often before graduation or before OPT starts), and make clear the
+  employer registers them. `h1b_lottery_seasons` lists every season they can be entered in
+  while their F-1 work time lasts; say how many chances that is and that each year is a new
+  try. The wage-level weighted lottery is in effect: say plainly that a higher wage level
+  gets more entries (level I: 1, level IV: 4), never "if applicable".
+- A STEM OPT step needs, in order: a Form I-983 training plan with an E-Verify employer, a new
+  DSO recommendation, then the I-765 filed within 60 days of that recommendation and before
+  OPT ends. Its cost is the same I-765 fee.
+- `policy_status` gives the legal status of recent rule changes. Never describe a "proposed"
+  or "blocked by court" rule as in effect, and never plan around a "struck down" one. You may
+  mention a proposed change in `warnings`, saying it is proposed and not in effect.
 - F-1 students do not use advance parole. For travel, say what the researched rules say
   (for example, re-entering after the program ends while OPT is pending or approved
   generally needs the EAD and a job offer), or tell them to ask their DSO before travelling.
-- For anything that changed recently or depends on the year (H-1B selection method, fees,
-  registration dates), say what the source says and when it applies.
 - Never state a rule, limit or date unless the key dates or a requirement says so.
 - Keep each duration range realistic and tight: the max at most about 3 times the min.
 - `depends_on` lists the ids of steps that must finish first. Steps that can run in

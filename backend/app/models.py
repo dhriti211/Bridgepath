@@ -47,6 +47,7 @@ class Source(BaseModel):
     url: str
     snippet: str = ""
     official: bool = False
+    published: str = ""  # news articles only
 
 
 class Requirement(BaseModel):
@@ -86,6 +87,22 @@ class Deadline(BaseModel):
     approximate: bool = False
 
 
+class PolicyItem(BaseModel):
+    """A recent or pending rule change, with its legal status (see agent/facts.py)."""
+
+    title: str
+    status: Literal["in effect", "proposed", "blocked by court", "struck down"]
+    date: str
+    summary: str
+    source_url: str
+
+
+class H1BSeason(BaseModel):
+    label: str          # e.g. "March 2027"
+    fiscal_year: int    # the H-1B fiscal year this registration is for
+    note: str
+
+
 class Roadmap(BaseModel):
     mode: Literal["license", "student"] = "license"
     headline: str
@@ -99,6 +116,9 @@ class Roadmap(BaseModel):
     total_weeks_max: float = 0
     sources: list[Source] = []
     deadlines: list[Deadline] = []
+    h1b_seasons: list[H1BSeason] = []
+    policy: list[PolicyItem] = []
+    news: list[Source] = []
 
 
 # ---- International (F-1) students ----
