@@ -97,7 +97,7 @@ export default function App() {
         <GoalPicker profile={profile} goals={goals} onPick={pickGoal} onBack={reset} />
       ) : (
         <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[320px_1fr]">
-          <aside className="no-print space-y-6 lg:sticky lg:top-6 lg:self-start">
+          <aside className={`no-print space-y-6 lg:sticky lg:top-6 lg:self-start ${phase === 'done' ? 'order-last lg:order-none' : ''}`}>
             <AgentFeed mode={mode} steps={steps} sources={sources} compact={phase === 'done'} />
           </aside>
           <section className="min-w-0 space-y-6">

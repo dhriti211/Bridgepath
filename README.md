@@ -95,7 +95,15 @@ Open http://localhost:5173.
 
 ## Deploy
 
-The `Dockerfile` builds the frontend and serves it from the FastAPI app on one port. Set `NEBIUS_API_KEY` and `TAVILY_API_KEY` as environment variables on your host (for example Render, or Nebius Serverless Endpoints).
+The `Dockerfile` builds the frontend and serves it from the FastAPI app on one port, so the whole app is one web service.
+
+**Render (free):**
+1. Sign in at [render.com](https://render.com) with GitHub.
+2. Click **New > Blueprint** and pick this repository. Render reads [`render.yaml`](render.yaml).
+3. Paste your `NEBIUS_API_KEY` and `TAVILY_API_KEY` when asked, then click **Apply**.
+4. When the build finishes, open the `onrender.com` URL and check `/api/health`.
+
+The free plan sleeps after 15 minutes without visitors, so the first visit after a quiet spell takes about a minute to wake up. Any other Docker host works the same way: set the two keys as environment variables.
 
 ## Keeping costs under control
 
