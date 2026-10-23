@@ -117,6 +117,11 @@ def test_h1b_seasons_count_lottery_chances():
     assert [s.label for s in h1b_seasons(profile(stem="no"), today)] == ["March 2027", "March 2028"]
     on_stem = h1b_seasons(profile(stage="stem_opt", opt_end="2028-01-10"), today)
     assert [s.label for s in on_stem] == ["March 2027"]
+    # A bachelor's student graduating in December has no degree for an April 2027 petition.
+    bs = h1b_seasons(profile(degree_level="Bachelor's", program_end="2027-12-15"), today)
+    assert [s.label for s in bs] == ["March 2028", "March 2029", "March 2030"]
+    bs_may = h1b_seasons(profile(degree_level="Bachelor's", program_end="2027-05-10"), today)
+    assert bs_may[0].label == "March 2027"
     # STEM OPT ends Mar 1: the 60-day grace period still covers an April 1 filing.
     grace = h1b_seasons(profile(stage="stem_opt", opt_end="2027-03-01"), today)
     assert [s.label for s in grace] == ["March 2027"]
