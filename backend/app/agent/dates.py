@@ -87,7 +87,7 @@ def student_deadlines(profile: StudentProfile, today: date | None = None) -> lis
             ))
 
     # H-1B registration usually runs in March for jobs starting October 1.
-    year = today.year if today < date(today.year, 3, 1) else today.year + 1
+    year = first_lottery_year(profile, today)
     out.append(Deadline(
         label="H-1B registration season",
         start=date(year, 3, 1).isoformat(),
@@ -98,6 +98,19 @@ def student_deadlines(profile: StudentProfile, today: date | None = None) -> lis
     ))
 
     return sorted(out, key=lambda d: (d.start or d.end or "9999", d.label))
+
+
+def first_lottery_year(profile: StudentProfile, today: date) -> int:
+    """The first March the student can be entered in the H-1B lottery.
+
+    The H-1B needs a bachelor's degree by the time the petition is filed (April 1 to June 30).
+    A master's or PhD student already has one; a bachelor's student must graduate first.
+    """
+    year = today.year if today < date(today.year, 4, 1) else today.year + 1
+    end = parse(profile.program_end)
+    if profile.stage == "studying" and end and profile.degree_level.lower().startswith("bachelor"):
+        year = max(year, end.year if end <= date(end.year, 6, 30) else end.year + 1)
+    return year
 
 
 def _add_months(d: date, months: int) -> date:
@@ -131,11 +144,12 @@ def h1b_seasons(profile: StudentProfile, today: date | None = None) -> list[H1BS
         return []
     last += timedelta(days=60)
     out = []
-    year = today.year if today < date(today.year, 4, 1) else today.year + 1
+    year = first_lottery_year(profile, today)
+    end = parse(profile.program_end)
     while date(year, 4, 1) <= last:
         n = len(out) + 1
         note = ("Your first chance" if n == 1 else f"Chance {n}")
-        if profile.stage == "studying" and parse(profile.program_end) and date(year, 3, 1) < parse(profile.program_end):
+        if profile.stage == "studying" and end and date(year, 3, 1) < end:
             note += ": before you graduate, an employer can still register you"
         out.append(H1BSeason(label=f"March {year}", fiscal_year=year + 1, note=note))
         year += 1
