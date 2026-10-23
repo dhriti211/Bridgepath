@@ -122,13 +122,14 @@ def work_authorization_end(profile: StudentProfile) -> date | None:
 def h1b_seasons(profile: StudentProfile, today: date | None = None) -> list[H1BSeason]:
     """The H-1B lottery seasons (March each year) the student can be entered in while authorized.
 
-    An employer must file the petition from April 1 while the student is still in status; cap-gap
-    then carries them to October 1. So a season counts if work time lasts until that April.
+    An employer must file the petition from April 1 while the student is still in status, which
+    includes the 60-day grace period after OPT ends; cap-gap then carries them to October 1.
     """
     today = today or date.today()
     last = work_authorization_end(profile)
     if not last:
         return []
+    last += timedelta(days=60)
     out = []
     year = today.year if today < date(today.year, 4, 1) else today.year + 1
     while date(year, 4, 1) <= last:

@@ -19,6 +19,16 @@ export default function Roadmap({ roadmap, profile }) {
     setDone(next)
     try { localStorage.setItem(storeKey, JSON.stringify(next)) } catch { /* storage unavailable */ }
   }
+  const visa = steps.filter((s) => s.kind !== 'career')
+  const officialCount = visa.filter((s) => s.official).length
+  const sections = [
+    roadmap.deadlines?.length && ['dates', 'Key dates'],
+    roadmap.h1b_seasons?.length && ['h1b', 'H-1B chances'],
+    ['steps', 'Steps'],
+    roadmap.bridge_jobs.length && ['employers', student ? 'Employers' : 'Jobs now'],
+    roadmap.warnings.length && ['warnings', 'Watch out'],
+    (roadmap.policy?.length || roadmap.news?.length) && ['policy', 'Policy watch'],
+  ].filter(Boolean)
   const count = steps.filter((s) => done.includes(s.id)).length
   const pct = steps.length ? Math.round((count / steps.length) * 100) : 0
 
@@ -38,13 +48,27 @@ export default function Roadmap({ roadmap, profile }) {
             <Stat label={student ? 'Visa path' : 'US equivalent'} value={roadmap.us_equivalent} className="col-span-2 sm:col-span-1" />
           )}
         </dl>
+        {visa.length > 0 && (
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm">
+            ✓ {officialCount} of {visa.length} {student ? 'visa' : 'licensing'} steps linked to an official source
+          </p>
+        )}
       </section>
+
+      <nav aria-label="Roadmap sections" className="no-print -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {sections.map(([id, label]) => (
+          <a key={id} href={`#${id}`}
+            className="shrink-0 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink transition hover:border-brand hover:text-brand">
+            {label}
+          </a>
+        ))}
+      </nav>
 
       {roadmap.deadlines?.length > 0 && <Deadlines deadlines={roadmap.deadlines} />}
 
       {roadmap.h1b_seasons?.length > 0 && <H1BChances seasons={roadmap.h1b_seasons} />}
 
-      <section>
+      <section id="steps" className="scroll-mt-20">
         <div className="no-print sticky top-[65px] z-10 -mx-1 mb-4 rounded-xl bg-paper/90 px-1 py-2 backdrop-blur">
           <div className="flex items-baseline justify-between">
             <h3 className="font-display text-xl">Your steps</h3>
@@ -121,7 +145,7 @@ export default function Roadmap({ roadmap, profile }) {
       </section>
 
       {roadmap.bridge_jobs.length > 0 && (
-        <section className="print-break">
+        <section id="employers" className="print-break scroll-mt-20">
           <h3 className="mb-1 font-display text-xl">{student ? 'Employers to target' : 'Work you can do now'}</h3>
           <p className="mb-4 text-sm text-muted">
             {student
@@ -143,7 +167,7 @@ export default function Roadmap({ roadmap, profile }) {
       )}
 
       {roadmap.warnings.length > 0 && (
-        <section className="print-break rounded-xl border border-accent/30 bg-accent-soft p-5">
+        <section id="warnings" className="print-break scroll-mt-20 rounded-xl border border-accent/30 bg-accent-soft p-5">
           <h3 className="mb-2 font-semibold text-ink">Watch out for</h3>
           <ul className="list-disc space-y-1 pl-5 text-sm text-ink">
             {roadmap.warnings.map((w) => <li key={w}>{w}</li>)}
@@ -197,7 +221,7 @@ function countdown(d) {
 
 function Deadlines({ deadlines }) {
   return (
-    <section className="print-break">
+    <section id="dates" className="print-break scroll-mt-20">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="mb-1 font-display text-xl">Your key dates</h3>
@@ -244,7 +268,7 @@ const WAGE_LEVELS = [
 
 function H1BChances({ seasons }) {
   return (
-    <section className="print-break rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
+    <section id="h1b" className="print-break scroll-mt-20 rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
       <h3 className="font-display text-xl">Your H-1B chances</h3>
       <p className="mt-1 text-sm text-muted">
         You can be entered in the H-1B lottery <strong className="text-ink">{seasons.length} time{seasons.length === 1 ? '' : 's'}</strong>{' '}
@@ -293,7 +317,7 @@ const STATUS_TONE = {
 
 function PolicyWatch({ policy, news }) {
   return (
-    <section className="print-break">
+    <section id="policy" className="print-break scroll-mt-20">
       <h3 className="mb-1 font-display text-xl">Policy watch</h3>
       <p className="mb-4 text-sm text-muted">Recent rule changes and where each one stands today, so you know what actually applies to you.</p>
       <div className="grid gap-3 sm:grid-cols-2">
