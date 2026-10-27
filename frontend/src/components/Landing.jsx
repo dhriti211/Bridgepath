@@ -1,188 +1,131 @@
 import { useState } from 'react'
-import { EXAMPLES, STUDENT_EXAMPLES } from '../data'
-import HeroArt from './HeroArt'
 import IntakeForm from './IntakeForm'
 import StudentForm from './StudentForm'
 
 const STEPS = [
-  ['Tell us where you are', 'Your degree, major, program end date and the job you want. Add your resume for a sharper plan.'],
-  ['Pick a goal', 'Nemotron reads your background and suggests three realistic goals, from big tech to cap-exempt employers.'],
-  ['Get your roadmap', 'Your OPT, STEM OPT and H-1B dates, plus ordered steps, each linked to USCIS or another official source.'],
-  ['Track and ask', 'Tick off steps as you go, ask follow-up questions, and download a PDF checklist.'],
-]
-
-const AUDIENCES = [
-  { key: 'tech', mode: 'student', example: 0, title: 'Students in tech', icon: '💻', text: 'Software, data and AI students planning OPT, STEM OPT and an H-1B, and looking for employers that sponsor.' },
-  { key: 'eng', mode: 'student', example: 2, title: 'Engineering students', icon: '⚙️', text: 'Mechanical, civil, electrical and other engineering majors turning an F-1 degree into a US career.' },
-  { key: 'pro', mode: 'license', example: 0, title: 'Professionals trained abroad', icon: '🩺', text: 'Nurses, engineers and teachers with a foreign degree who need a US license to work in their field again.' },
+  ['01', 'Tell us where you are', 'Degree, graduation date and the job you want. A resume helps.'],
+  ['02', 'Pick a goal', 'Nemotron suggests three realistic goals. You choose one.'],
+  ['03', 'Get your plan', 'Your dates, steps and H-1B chances, each linked to its official source.'],
 ]
 
 const FAQ = [
-  ['Is Bridgepath free?', 'Yes. It is an open-source project built for the Nebius x NVIDIA Global AI Hackathon.'],
-  ['Where does the information come from?', 'Each roadmap is built from a live search of USCIS, Study in the States, the Department of Labor, state boards and exam bodies. Your key F-1 dates are calculated from the regulations. Every step shows whether it is backed by an official source, an unofficial one, or none, so you know what to double-check.'],
-  ['Is this legal or immigration advice?', 'No. Bridgepath helps you understand the process and prepare good questions. Confirm every step with your DSO, and talk to an immigration attorney for anything beyond OPT.'],
-  ['How do you pick my goals?', 'Nemotron reads your degree, skills and experience (from the form and your resume) and suggests three different, realistic goals. You choose one, or type your own, before any plan is made.'],
-  ['Do you store my resume?', 'No. Your resume is read once to build your profile and is not saved.'],
-  ['Who is it for?', 'International (F-1) students in tech and engineering first, and also nurses, engineers and K-12 teachers with a foreign degree who need a US license.'],
+  ['Where does the information come from?', 'Rules are searched live on USCIS, DHS and the Federal Register, key dates are calculated from the F-1 regulations, and every step shows its source.'],
+  ['Is this legal advice?', 'No. It helps you understand the process and prepare good questions. Confirm every step with your DSO.'],
+  ['Do I need an account?', 'No. Your roadmaps are saved in this browser only, and your resume is never stored.'],
+  ['Is it free?', 'Yes. Bridgepath is open source, built for the Nebius x NVIDIA Global AI Hackathon.'],
 ]
 
-export default function Landing({ onLicense, onStudent, suggesting }) {
+export default function Landing({ onLicense, onStudent, suggesting, saved, onOpenSaved, onDeleteSaved }) {
   const [mode, setMode] = useState('student')
-  const [preset, setPreset] = useState({ n: 0, form: null })
 
-  function pick(a) {
-    const ex = (a.mode === 'student' ? STUDENT_EXAMPLES : EXAMPLES)[a.example]
-    setMode(a.mode)
-    setPreset((p) => ({ n: p.n + 1, form: ex?.form ?? null }))
-    document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  function switchMode(m) {
+  function start(m) {
     setMode(m)
-    setPreset((p) => ({ n: p.n + 1, form: null }))
+    document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
     <main>
       {/* Hero */}
-      <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-12 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:pb-20 lg:pt-16">
-        <div className="fade-up">
-          <p className="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent">
-            <span className="h-2 w-2 rounded-full bg-accent" /> For international students, by an international student
-          </p>
-          <h1 className="font-display text-5xl leading-[1.05] tracking-tight sm:text-6xl">
-            Study here. <span className="text-brand">Build your career here.</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted">
-            OPT, STEM OPT, H-1B: the rules keep changing and the answers are scattered. Bridgepath reads the
-            official sources live and turns them into your personal plan, with your key dates, the steps in
-            order, and employers that are more likely to sponsor.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#start" className="rounded-full bg-brand px-6 py-3 font-medium text-white shadow-lg shadow-brand/20 transition hover:-translate-y-0.5 hover:bg-brand-dark">
-              Build my roadmap
-            </a>
-            <a href="#how" className="rounded-full border border-line bg-card px-6 py-3 font-medium text-ink transition hover:-translate-y-0.5 hover:border-brand">
-              How it works
-            </a>
-          </div>
-          <p className="mt-6 text-sm text-muted">
-            Free · No sign-up · Every step linked to its source ·{' '}
-            <button onClick={() => { switchMode('license'); document.getElementById('start')?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="underline decoration-line underline-offset-2 hover:text-brand">Trained abroad? We cover licensing too</button>
-          </p>
-        </div>
-
-        <div className="relative mx-auto w-full max-w-lg">
-          <HeroArt />
-          <FloatChip className="left-0 top-[18%]" delay="0s">✓ OPT approved</FloatChip>
-          <FloatChip className="right-0 top-[8%]" delay="1.2s">📅 STEM OPT filed</FloatChip>
-          <FloatChip className="bottom-[14%] right-2" delay="2.4s" strong>🎉 Offer from a sponsor</FloatChip>
-        </div>
-      </section>
-
-      {/* Stats band */}
-      <section className="bg-brand text-white">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:grid-cols-3 sm:px-6">
-          {[
-            ['1.18 million', 'international students in the US in 2024/25, 57% of them in STEM', 'IIE Open Doors 2025'],
-            ['294,000+', 'on OPT after graduating, up 21% in a year', 'IIE Open Doors 2025'],
-            ['2 million', 'college-educated immigrants unemployed or working below their skills', 'Migration Policy Institute, 2021'],
-          ].map(([n, t, src]) => (
-            <div key={n}>
-              <p className="font-display text-4xl">{n}</p>
-              <p className="mt-1 text-sm text-white/80">{t}</p>
-              <p className="mt-1 text-xs text-white/60">{src}</p>
+      <section className="relative overflow-hidden bg-night text-white">
+        <div className="grid-bg absolute inset-0" aria-hidden="true" />
+        <div className="absolute inset-x-0 -top-40 mx-auto h-96 max-w-3xl rounded-full bg-brand/30 blur-3xl" aria-hidden="true" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-16 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pb-28 lg:pt-24">
+          <div className="fade-up">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 font-mono text-xs text-teal-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-teal-300" /> AI agent for F-1 students
+            </p>
+            <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+              Your OPT and H-1B plan,{' '}
+              <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">built from today's rules.</span>
+            </h1>
+            <p className="mt-6 max-w-lg text-lg text-slate-300">
+              Bridgepath reads USCIS and DHS live and turns them into your own dates, steps and lottery chances.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <button onClick={() => start('student')}
+                className="rounded-xl bg-brand px-6 py-3 font-medium text-white shadow-lg shadow-brand/30 transition hover:-translate-y-0.5 hover:bg-teal-500">
+                Build my roadmap
+              </button>
+              <button onClick={() => start('license')} className="text-sm text-slate-300 underline-offset-4 hover:text-white hover:underline">
+                Trained abroad? Get a licensing plan
+              </button>
             </div>
-          ))}
+            <dl className="mt-12 flex flex-wrap gap-x-10 gap-y-4">
+              {[['1.18M', 'international students'], ['294K', 'working on OPT'], ['3', 'Nemotron models']].map(([n, t]) => (
+                <div key={t}>
+                  <dt className="font-display text-2xl font-semibold">{n}</dt>
+                  <dd className="text-xs text-slate-400">{t}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-[11px] text-slate-500">Student numbers: IIE Open Doors 2025.</p>
+          </div>
+          <Preview />
         </div>
       </section>
+
+      {saved.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6">
+          <h2 className="font-display text-2xl font-semibold">My roadmaps</h2>
+          <p className="mt-1 text-sm text-muted">Saved in this browser.</p>
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {saved.map((s) => (
+              <li key={s.id} className="group flex min-w-0 items-start justify-between gap-3 rounded-2xl border border-line bg-card p-4 transition hover:border-brand">
+                <button onClick={() => onOpenSaved(s)} className="min-w-0 flex-1 text-left">
+                  <p className="truncate font-medium">{s.title}</p>
+                  <p className="mt-1 font-mono text-xs text-muted">
+                    {new Date(s.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {s.roadmap.steps.length} steps
+                  </p>
+                </button>
+                <button onClick={() => onDeleteSaved(s.id)} aria-label={`Delete ${s.title}`}
+                  className="rounded-lg px-2 text-muted opacity-60 hover:bg-paper hover:text-ink group-hover:opacity-100">✕</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* How it works */}
-      <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 lg:py-24">
-        <h2 className="font-display text-3xl sm:text-4xl">How it works</h2>
-        <p className="mt-2 max-w-2xl text-muted">From "what do I do after graduation?" to a clear, sourced plan in about a minute.</p>
-        <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([t, d], i) => (
-            <li key={t} className="group rounded-2xl border border-line bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-soft font-display text-lg font-semibold text-brand transition group-hover:bg-brand group-hover:text-white">
-                {i + 1}
-              </span>
-              <h3 className="mt-4 font-semibold">{t}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{d}</p>
+      <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6 lg:py-20">
+        <ol className="grid gap-4 md:grid-cols-3">
+          {STEPS.map(([n, t, d]) => (
+            <li key={n} className="rounded-2xl border border-line bg-card p-6">
+              <span className="font-mono text-xs text-brand">{n}</span>
+              <h3 className="mt-3 font-display text-lg font-semibold">{t}</h3>
+              <p className="mt-1 text-sm text-muted">{d}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      {/* Professions */}
-      <section className="bg-brand-soft/60">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <h2 className="font-display text-3xl sm:text-4xl">Who it's for</h2>
-          <p className="mt-2 max-w-2xl text-muted">Pick one to start with a ready-made example you can edit.</p>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {AUDIENCES.map((p) => (
-              <button key={p.key} onClick={() => pick(p)}
-                className="group rounded-2xl border border-line bg-card p-6 text-left shadow-sm transition hover:-translate-y-1 hover:border-brand hover:shadow-md">
-                <span className="text-3xl">{p.icon}</span>
-                <h3 className="mt-3 font-semibold">{p.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{p.text}</p>
-                <span className="mt-4 inline-block text-sm font-medium text-brand">
-                  Try it <span className="inline-block transition group-hover:translate-x-1">→</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Form */}
-      <section id="start" className="mx-auto grid max-w-6xl scroll-mt-20 gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:py-24">
-        <div>
-          <h2 className="font-display text-3xl sm:text-4xl">Build your roadmap</h2>
-          <div role="tablist" className="mt-5 inline-flex rounded-full border border-line bg-card p-1 text-sm">
+      <section id="start" className="mx-auto max-w-3xl scroll-mt-20 px-4 pb-16 sm:px-6">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <h2 className="font-display text-3xl font-semibold">Build your roadmap</h2>
+          <div role="tablist" className="inline-flex rounded-xl border border-line bg-card p-1 text-sm">
             {[['student', 'International student'], ['license', 'Trained abroad']].map(([m, label]) => (
-              <button key={m} role="tab" aria-selected={mode === m} onClick={() => switchMode(m)}
-                className={`rounded-full px-4 py-2 font-medium transition ${mode === m ? 'bg-brand text-white shadow' : 'text-muted hover:text-ink'}`}>
+              <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
+                className={`rounded-lg px-4 py-2 font-medium transition ${mode === m ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>
                 {label}
               </button>
             ))}
           </div>
-          <p className="mt-4 text-muted">
-            {mode === 'student'
-              ? 'For F-1 students and graduates on OPT. We suggest goals that fit you, then plan the one you pick.'
-              : 'For nurses, engineers and K-12 teachers with a foreign degree who want a US license.'}
-            {' '}Anything you add under "anything else" is used exactly as you write it.
-          </p>
-          <ul className="mt-6 space-y-3 text-sm">
-            {[
-              ['Personal', 'Built from your degree, dates, skills and goal.'],
-              ['Sourced', 'Every step shows the official site it came from.'],
-              ['Practical', 'Deadlines, costs, documents, and where to look for work.'],
-            ].map(([t, d]) => (
-              <li key={t} className="flex gap-3">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs text-brand">✓</span>
-                <span><strong className="font-semibold">{t}.</strong> <span className="text-muted">{d}</span></span>
-              </li>
-            ))}
-          </ul>
         </div>
         {mode === 'student'
-          ? <StudentForm key={`s${preset.n}`} initial={preset.form} onSubmit={onStudent} busy={suggesting} />
-          : <IntakeForm key={`l${preset.n}`} initial={preset.form} onSubmit={onLicense} />}
+          ? <StudentForm onSubmit={onStudent} busy={suggesting} />
+          : <IntakeForm onSubmit={onLicense} />}
       </section>
 
       {/* FAQ */}
       <section className="mx-auto max-w-3xl px-4 pb-20 sm:px-6">
-        <h2 className="font-display text-3xl sm:text-4xl">Questions</h2>
-        <div className="mt-6 divide-y divide-line rounded-2xl border border-line bg-card">
+        <div className="divide-y divide-line rounded-2xl border border-line bg-card">
           {FAQ.map(([q, a]) => (
             <details key={q} className="group p-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {q}
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand transition group-open:rotate-45">+</span>
+                <span className="text-muted transition group-open:rotate-45">+</span>
               </summary>
-              <p className="mt-3 text-sm leading-relaxed text-muted">{a}</p>
+              <p className="mt-2 text-sm text-muted">{a}</p>
             </details>
           ))}
         </div>
@@ -191,11 +134,36 @@ export default function Landing({ onLicense, onStudent, suggesting }) {
   )
 }
 
-function FloatChip({ children, className, delay, strong }) {
+// A small, static picture of what a roadmap looks like.
+function Preview() {
   return (
-    <div style={{ animationDelay: delay }}
-      className={`float absolute rounded-full px-3.5 py-2 text-sm font-medium shadow-lg ${strong ? 'bg-brand text-white' : 'bg-card text-ink'} ${className}`}>
-      {children}
+    <div className="fade-up relative mx-auto w-full max-w-md" style={{ animationDelay: '150ms' }} aria-hidden="true">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur">
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-xs text-slate-400">MS Computer Science → Software engineer</p>
+          <span className="rounded-full bg-teal-400/15 px-2 py-0.5 font-mono text-[10px] text-teal-200">6/6 sourced</span>
+        </div>
+        <div className="mt-4 space-y-2.5">
+          {[
+            ['Ask your DSO to recommend OPT', 'Jan 15', 'Opens in 85 days'],
+            ['File Form I-765 for OPT', 'Feb 14', '$470 online'],
+            ['H-1B registration', 'Mar 2027', 'Chance 1 of 4'],
+            ['STEM OPT extension', '2028', '+24 months'],
+          ].map(([t, d, tag], i) => (
+            <div key={t} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2.5">
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11px] ${i === 0 ? 'bg-teal-400 text-night' : 'bg-white/10 text-slate-300'}`}>{i + 1}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm text-white">{t}</p>
+                <p className="font-mono text-[11px] text-slate-400">{d}</p>
+              </div>
+              <span className="shrink-0 font-mono text-[11px] text-teal-200">{tag}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="float absolute -bottom-5 -left-4 rounded-xl border border-white/10 bg-night px-3 py-2 font-mono text-[11px] text-slate-300 shadow-xl">
+        nemotron-ultra · planning
+      </div>
     </div>
   )
 }
