@@ -18,7 +18,7 @@ Bridgepath also helps professionals trained abroad (nurses, engineers and K-12 t
 4. **See your H-1B chances**: how many March lottery seasons you get while your F-1 work time lasts, and how the wage-level weighted lottery changes your odds.
 5. **Get your roadmap**: ordered career and immigration steps, each with cost, time, documents and a link to USCIS or another official source, plus the kinds of employers to target.
 6. **Policy watch**: each recent rule change (H-1B fees, OPT fees, duration of status) with its real status today (in effect, proposed, blocked by a court or struck down), an official link, and this month's news found live by Tavily.
-7. **Track and ask**: tick off steps, ask follow-ups ("What if I lose my job on OPT?"), and download a PDF.
+7. **Track and ask**: tick off steps, ask follow-ups ("What if I lose my job on OPT?"), download a PDF, and reopen past roadmaps from "My roadmaps" (saved in your browser, no account needed).
 
 **For professionals trained abroad**: enter your profession, country, degree and state, and get a relicensing roadmap with costs, exams, sources and jobs you can do while you relicense.
 

@@ -5,6 +5,7 @@ import Chat from './components/Chat'
 import GoalPicker from './components/GoalPicker'
 import Landing from './components/Landing'
 import Roadmap from './components/Roadmap'
+import { deleteSaved, loadSaved, saveRoadmap } from './saved'
 
 export default function App() {
   const [phase, setPhase] = useState('form') // form | goals | running | done | error
@@ -17,7 +18,12 @@ export default function App() {
   const [roadmap, setRoadmap] = useState(null)
   const [error, setError] = useState('')
   const [limited, setLimited] = useState(false)
+  const [saved, setSaved] = useState(loadSaved)
   const abort = useRef(null)
+  const modeRef = useRef(mode)
+  const profileRef = useRef(profile)
+  modeRef.current = mode
+  profileRef.current = profile
 
   async function run(streamer) {
     setPhase('running'); setSteps({}); setSources([]); setRoadmap(null); setError('')
@@ -58,8 +64,17 @@ export default function App() {
     else if (ev.type === 'sources')
       setSources((prev) => [...prev, ...ev.sources.filter((n) => !prev.some((p) => p.url === n.url))])
     else if (ev.type === 'profile') setProfile(ev.profile)
-    else if (ev.type === 'roadmap') { setRoadmap(ev.roadmap); setPhase('done') }
+    else if (ev.type === 'roadmap') {
+      setRoadmap(ev.roadmap); setPhase('done')
+      setSaved(saveRoadmap({ mode: modeRef.current, profile: profileRef.current, roadmap: ev.roadmap }))
+    }
     else if (ev.type === 'error') { setError(ev.message); setLimited(!!ev.limit); setPhase('error') }
+  }
+
+  function openSaved(entry) {
+    setMode(entry.mode); setProfile(entry.profile); setRoadmap(entry.roadmap)
+    setSteps({}); setSources([]); setPhase('done')
+    window.scrollTo({ top: 0 })
   }
 
   function reset() {
@@ -70,40 +85,43 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="no-print sticky top-0 z-20 border-b border-line bg-paper/80 backdrop-blur">
+      <header className={`no-print sticky top-0 z-20 border-b backdrop-blur ${phase === 'form' ? 'border-white/10 bg-night text-white' : 'border-line bg-paper/80'}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <button onClick={reset} className="flex items-center gap-2">
             <Logo />
-            <span className="font-display text-xl font-semibold">Bridgepath</span>
+            <span className="font-display text-xl font-semibold tracking-tight">Bridgepath</span>
           </button>
           {phase === 'form' && (
             <nav className="flex items-center gap-1 text-sm sm:gap-4">
-              <a href="#how" className="hidden rounded-full px-3 py-2 text-muted hover:text-ink sm:inline">How it works</a>
-              <a href="#start" className="rounded-full bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark">Get started</a>
+              <a href="#how" className="hidden rounded-lg px-3 py-2 text-slate-300 hover:text-white sm:inline">How it works</a>
+              <a href="#start" className="rounded-lg bg-white px-4 py-2 font-medium text-night hover:bg-slate-200">Get started</a>
             </nav>
           )}
           {phase === 'done' && (
             <div className="flex gap-2">
-              <button onClick={() => printRoadmap(mode === 'student' ? profile?.target_role : profile?.target_state)} className="rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium hover:border-brand">Download PDF</button>
-              <button onClick={reset} className="rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">New roadmap</button>
+              <button onClick={() => printRoadmap(mode === 'student' ? profile?.target_role : profile?.target_state)} className="rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium hover:border-brand"><span className="hidden sm:inline">Download </span>PDF</button>
+              <button onClick={reset} className="rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand-dark">New<span className="hidden sm:inline"> roadmap</span></button>
             </div>
           )}
         </div>
       </header>
 
       {phase === 'form' ? (
-        <Landing onLicense={startLicense} onStudent={startStudent} suggesting={suggesting} />
+        <Landing onLicense={startLicense} onStudent={startStudent} suggesting={suggesting}
+          saved={saved} onOpenSaved={openSaved} onDeleteSaved={(id) => setSaved(deleteSaved(id))} />
       ) : phase === 'goals' ? (
         <GoalPicker profile={profile} goals={goals} onPick={pickGoal} onBack={reset} />
       ) : (
-        <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[320px_1fr]">
-          <aside className={`no-print space-y-6 lg:sticky lg:top-6 lg:self-start ${phase === 'done' ? 'order-last lg:order-none' : ''}`}>
-            <AgentFeed mode={mode} steps={steps} sources={sources} compact={phase === 'done'} />
-          </aside>
+        <main className={`mx-auto px-4 py-8 sm:px-6 ${phase === 'done' ? 'max-w-4xl space-y-6' : 'grid max-w-6xl gap-6 lg:grid-cols-[320px_1fr]'}`}>
+          {phase !== 'done' && (
+            <aside className="no-print lg:sticky lg:top-24 lg:self-start">
+              <AgentFeed mode={mode} steps={steps} sources={sources} />
+            </aside>
+          )}
           <section className="min-w-0 space-y-6">
             {phase === 'running' && <Waiting mode={mode} />}
             {phase === 'error' && (
-              <div className={`rounded-2xl border p-6 ${limited ? 'border-accent/30 bg-accent-soft' : 'border-red-200 bg-red-50'}`}>
+              <div className={`rounded-2xl border p-6 ${limited ? 'border-amber-200 bg-accent-soft' : 'border-red-200 bg-red-50'}`}>
                 <h2 className={`font-semibold ${limited ? 'text-ink' : 'text-red-800'}`}>{limited ? 'Demo limit reached' : 'Something went wrong'}</h2>
                 <p className={`mt-1 text-sm ${limited ? 'text-ink' : 'text-red-700'}`}>{error}</p>
                 <button onClick={reset} className="mt-4 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white">Try again</button>
@@ -112,6 +130,14 @@ export default function App() {
             {phase === 'done' && roadmap && (
               <>
                 <Roadmap roadmap={roadmap} profile={profile} />
+                {Object.keys(steps).length > 0 && (
+                  <details className="no-print rounded-2xl border border-line bg-card">
+                    <summary className="cursor-pointer p-4 text-sm font-medium">
+                      How the agent built this <span className="font-mono text-xs text-muted">· Nemotron Nano, Super, Ultra + Tavily</span>
+                    </summary>
+                    <div className="border-t border-line p-1"><AgentFeed mode={mode} steps={steps} sources={sources} compact bare /></div>
+                  </details>
+                )}
                 <Chat profile={profile} roadmap={roadmap} />
               </>
             )}
@@ -147,12 +173,12 @@ function Waiting({ mode }) {
     return () => clearInterval(t)
   }, [tips])
   return (
-    <div className="fade-up rounded-3xl border border-line bg-card p-8 text-center shadow-sm sm:p-10">
+    <div className="fade-up rounded-3xl border border-line bg-card p-8 text-center sm:p-10">
       <div className="relative mx-auto h-14 w-14">
         <div className="absolute inset-0 animate-ping rounded-full bg-brand-soft" />
         <div className="relative h-14 w-14 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
       </div>
-      <h2 className="mt-5 font-display text-2xl">Building your roadmap</h2>
+      <h2 className="mt-5 font-display text-2xl font-semibold">Building your roadmap</h2>
       <p className="mt-1 text-sm text-muted">
         We're reading {mode === 'student' ? 'USCIS and other official sources' : 'official licensing sources'} for you. This takes about a minute.
       </p>
@@ -177,6 +203,11 @@ function printRoadmap(subject) {
   const old = document.title
   const day = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).replace(',', '')
   document.title = ['Bridgepath roadmap', subject, day].filter(Boolean).join(' - ').replace(/[\\/:*?"<>|]/g, '')
-  window.addEventListener('afterprint', () => { document.title = old }, { once: true })
+  // Open every folded section so the PDF has the full plan.
+  document.querySelectorAll('details:not([open])').forEach((d) => { d.open = true; d.dataset.printOpened = '1' })
+  window.addEventListener('afterprint', () => {
+    document.title = old
+    document.querySelectorAll('details[data-print-opened]').forEach((d) => { d.open = false; delete d.dataset.printOpened })
+  }, { once: true })
   window.print()
 }

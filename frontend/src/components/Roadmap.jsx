@@ -19,184 +19,179 @@ export default function Roadmap({ roadmap, profile }) {
     setDone(next)
     try { localStorage.setItem(storeKey, JSON.stringify(next)) } catch { /* storage unavailable */ }
   }
-  const visa = steps.filter((s) => s.kind !== 'career')
-  const officialCount = visa.filter((s) => s.official).length
-  const sections = [
-    roadmap.deadlines?.length && ['dates', 'Key dates'],
-    roadmap.h1b_seasons?.length && ['h1b', 'H-1B chances'],
-    ['steps', 'Steps'],
-    roadmap.bridge_jobs.length && ['employers', student ? 'Employers' : 'Jobs now'],
-    roadmap.warnings.length && ['warnings', 'Watch out'],
-    (roadmap.policy?.length || roadmap.news?.length) && ['policy', 'Policy watch'],
-  ].filter(Boolean)
   const count = steps.filter((s) => done.includes(s.id)).length
   const pct = steps.length ? Math.round((count / steps.length) * 100) : 0
+  const visa = steps.filter((s) => s.kind !== 'career')
+  const officialCount = visa.filter((s) => s.official).length
+
+  const tabs = [
+    ['plan', 'Plan'],
+    (roadmap.deadlines?.length || roadmap.h1b_seasons?.length) && ['dates', 'Dates'],
+    roadmap.bridge_jobs.length && ['employers', student ? 'Employers' : 'Jobs now'],
+    (roadmap.policy?.length || roadmap.news?.length || roadmap.sources.length) && ['rules', student ? 'Rule changes' : 'Sources'],
+  ].filter(Boolean)
+  const [tab, setTab] = useState('plan')
+  // Hidden tabs still print, so the PDF has everything.
+  const panel = (key) => (tab === key ? 'space-y-6' : 'hidden space-y-6 print:block')
 
   return (
     <div className="space-y-6">
-      <section className="fade-up print-break rounded-3xl bg-gradient-to-br from-brand to-brand-dark p-6 text-white shadow-sm sm:p-8">
-        <p className="text-sm font-medium text-white/80">
-          {student
-            ? `Your plan as a ${profile?.degree_level} ${profile?.major} graduate → ${profile?.target_role}`
-            : `Your path as a ${profile?.degree} holder from ${profile?.country} → ${profile?.target_state}`}
-        </p>
-        <h2 className="mt-2 font-display text-2xl leading-snug sm:text-3xl">{roadmap.headline}</h2>
-        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Stat label="Estimated cost" value={range(roadmap.total_cost_usd_min, roadmap.total_cost_usd_max, usd)} />
-          <Stat label="Estimated time" value={`${range(months(roadmap.total_weeks_min), months(roadmap.total_weeks_max))} months`} />
-          {roadmap.us_equivalent && (
-            <Stat label={student ? 'Visa path' : 'US equivalent'} value={roadmap.us_equivalent} className="col-span-2 sm:col-span-1" />
-          )}
-        </dl>
-        {visa.length > 0 && (
-          <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm">
-            ✓ {officialCount} of {visa.length} {student ? 'visa' : 'licensing'} steps linked to an official source
+      <section className="fade-up print-break relative overflow-hidden rounded-3xl bg-night p-6 text-white sm:p-8">
+        <div className="grid-bg absolute inset-0" aria-hidden="true" />
+        <div className="relative">
+          <p className="font-mono text-xs text-slate-400">
+            {student
+              ? `${profile?.degree_level} ${profile?.major} → ${profile?.target_role}`
+              : `${profile?.degree} · ${profile?.country} → ${profile?.target_state}`}
           </p>
-        )}
-      </section>
-
-      <nav aria-label="Roadmap sections" className="no-print -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {sections.map(([id, label]) => (
-          <a key={id} href={`#${id}`}
-            className="shrink-0 rounded-full border border-line bg-card px-3.5 py-1.5 text-sm font-medium text-ink transition hover:border-brand hover:text-brand">
-            {label}
-          </a>
-        ))}
-      </nav>
-
-      {roadmap.deadlines?.length > 0 && <Deadlines deadlines={roadmap.deadlines} />}
-
-      {roadmap.h1b_seasons?.length > 0 && <H1BChances seasons={roadmap.h1b_seasons} />}
-
-      <section id="steps" className="scroll-mt-20">
-        <div className="no-print sticky top-[65px] z-10 -mx-1 mb-4 rounded-xl bg-paper/90 px-1 py-2 backdrop-blur">
-          <div className="flex items-baseline justify-between">
-            <h3 className="font-display text-xl">Your steps</h3>
-            <span className="text-sm text-muted">{count} of {steps.length} done</span>
+          <h2 className="mt-2 font-display text-2xl font-semibold leading-snug sm:text-3xl">{roadmap.headline}</h2>
+          <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <Stat label="Cost to you" value={range(roadmap.total_cost_usd_min, roadmap.total_cost_usd_max, usd)} />
+            <Stat label="Time" value={`${range(months(roadmap.total_weeks_min), months(roadmap.total_weeks_max))} months`} />
+            {roadmap.us_equivalent && (
+              <Stat label={student ? 'Visa path' : 'US equivalent'} value={roadmap.us_equivalent} className="col-span-2 sm:col-span-1" />
+            )}
+          </dl>
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            {visa.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-teal-200">
+                ✓ {officialCount} of {visa.length} {student ? 'visa' : 'licensing'} steps officially sourced
+              </span>
+            )}
+            <span className="text-slate-400">{count} of {steps.length} steps done</span>
           </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-brand-soft">
-            <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${pct}%` }} />
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-teal-300 transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
-          {count === steps.length && steps.length > 0 && (
-            <p className="fade-up mt-2 text-sm font-medium text-brand">🎉 Every step done. Congratulations, you made it!</p>
-          )}
         </div>
-        <h3 className="mb-4 hidden font-display text-xl print:block">Your steps</h3>
-        <ol className="relative space-y-4 border-l-2 border-brand-soft pl-6 sm:ml-3">
-          {steps.map((s, i) => {
-            const isDone = done.includes(s.id)
-            return (
-            <li key={s.id} className="fade-up print-break relative" style={{ animationDelay: `${i * 90}ms` }}>
-              <button type="button" onClick={() => toggle(s.id)} aria-pressed={isDone}
-                title={isDone ? 'Mark as not done' : 'Mark as done'}
-                className={`absolute -left-[37px] flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ring-4 ring-paper transition hover:scale-110 ${isDone ? 'bg-accent text-white' : 'bg-brand text-white'}`}>
-                {isDone ? '✓' : i + 1}
-              </button>
-              <div className={`rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md ${isDone ? 'border-accent/40 opacity-75' : 'border-line hover:border-brand/50'}`}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h4 className={`font-semibold text-ink ${isDone ? 'line-through decoration-accent/60' : ''}`}>{s.title}</h4>
-                  <div className="flex flex-wrap gap-1.5 text-xs">
-                    <Chip>{s.cost_usd_max > 0 ? range(s.cost_usd_min, s.cost_usd_max, usd) : 'Free'}</Chip>
-                    <Chip>{range(s.duration_weeks_min, s.duration_weeks_max)} weeks</Chip>
-                  </div>
-                </div>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{s.description}</p>
-                {s.depends_on.filter((d) => index[d]).length > 0 && (
-                  <p className="mt-2 text-xs text-muted">
-                    After step {s.depends_on.filter((d) => index[d]).map((d) => index[d]).join(', ')}
-                  </p>
-                )}
-                {s.documents.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted">You'll need</p>
-                    <ul className="mt-1 flex flex-wrap gap-1.5">
-                      {s.documents.map((d) => (
-                        <li key={d} className="rounded-md bg-paper px-2 py-1 text-xs text-ink">{d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="mt-3 text-xs">
-                  {s.official ? (
-                    <a href={s.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-brand hover:underline">
-                      ✓ Official source: {hostOf(s.source_url)}
-                    </a>
-                  ) : s.verified ? (
-                    <span className="text-accent">
-                      Unofficial source:{' '}
-                      <a href={s.source_url} target="_blank" rel="noreferrer" className="underline">{hostOf(s.source_url)}</a>
-                      . Double-check with {student ? 'USCIS or your DSO' : 'the state board'}.
-                    </span>
-                  ) : s.kind === 'career' ? (
-                    <span className="text-muted">Career step: no official rule needed.</span>
-                  ) : (
-                    <span className="text-accent">No source found for this step. Confirm with {student ? 'your DSO' : 'the state board'}.</span>
-                  )}
-                </div>
-                <label className="no-print mt-4 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted hover:text-ink">
-                  <input type="checkbox" checked={isDone} onChange={() => toggle(s.id)} className="h-4 w-4 accent-[#0f766e]" />
-                  I've done this
-                </label>
-              </div>
-            </li>
-            )
-          })}
-        </ol>
       </section>
+
+      <div role="tablist" className="no-print sticky top-[65px] z-10 -mx-1 flex gap-1 overflow-x-auto rounded-xl border border-line bg-card/90 p-1 backdrop-blur">
+        {tabs.map(([key, label]) => (
+          <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+            className={`shrink-0 flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition ${tab === key ? 'bg-ink text-white' : 'text-muted hover:text-ink'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className={panel('plan')}>
+        {count === steps.length && steps.length > 0 && (
+          <p className="fade-up rounded-xl bg-brand-soft px-4 py-3 text-sm font-medium text-brand-dark">Every step done. Congratulations!</p>
+        )}
+        <ol className="space-y-3">
+          {steps.map((s, i) => (
+            <StepCard key={s.id} step={s} n={i + 1} index={index} done={done.includes(s.id)}
+              onToggle={() => toggle(s.id)} student={student} />
+          ))}
+        </ol>
+        {roadmap.warnings.length > 0 && <Warnings warnings={roadmap.warnings} />}
+      </div>
+
+      {tabs.some(([k]) => k === 'dates') && (
+        <div className={panel('dates')}>
+          {roadmap.deadlines?.length > 0 && <Deadlines deadlines={roadmap.deadlines} />}
+          {roadmap.h1b_seasons?.length > 0 && <H1BChances seasons={roadmap.h1b_seasons} />}
+        </div>
+      )}
 
       {roadmap.bridge_jobs.length > 0 && (
-        <section id="employers" className="print-break scroll-mt-20">
-          <h3 className="mb-1 font-display text-xl">{student ? 'Employers to target' : 'Work you can do now'}</h3>
-          <p className="mb-4 text-sm text-muted">
-            {student
-              ? 'Where your odds of sponsorship are better for this goal. Pay ranges are rough estimates.'
-              : 'Jobs that use your skills and build US experience while you get licensed.'}
+        <div className={panel('employers')}>
+          <p className="text-sm text-muted">
+            {student ? 'Where sponsorship is more likely for this goal. Pay ranges are rough estimates.' : 'Jobs that use your skills while you get licensed.'}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {roadmap.bridge_jobs.map((j) => (
-              <div key={j.title} className="rounded-xl border border-line bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand/50 hover:shadow-md">
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-semibold">{j.title}</h4>
-                  {j.typical_pay && <span className="shrink-0 text-xs font-medium text-brand">{j.typical_pay}</span>}
-                </div>
-                <p className="mt-1 text-sm text-muted">{j.why}</p>
+              <div key={j.title} className="rounded-2xl border border-line bg-card p-5">
+                <h4 className="font-medium">{j.title}</h4>
+                {j.typical_pay && <p className="mt-1 font-mono text-xs text-brand">{j.typical_pay}</p>}
+                <p className="mt-2 text-sm text-muted">{j.why}</p>
               </div>
             ))}
           </div>
-        </section>
+        </div>
       )}
 
-      {roadmap.warnings.length > 0 && (
-        <section id="warnings" className="print-break scroll-mt-20 rounded-xl border border-accent/30 bg-accent-soft p-5">
-          <h3 className="mb-2 font-semibold text-ink">Watch out for</h3>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-ink">
-            {roadmap.warnings.map((w) => <li key={w}>{w}</li>)}
-          </ul>
-        </section>
-      )}
-
-      {(roadmap.policy?.length > 0 || roadmap.news?.length > 0) && <PolicyWatch policy={roadmap.policy || []} news={roadmap.news || []} />}
-
-      {roadmap.sources.length > 0 && (
-        <section className="print-break">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">Sources</h3>
-          <ul className="space-y-1 text-sm">
-            {roadmap.sources.map((s) => (
-              <li key={s.url}>
-                <a href={s.url} target="_blank" rel="noreferrer" className="text-brand hover:underline">{s.title || s.url}</a>
-                <span className="text-muted"> · {hostOf(s.url)}{s.official ? ' · official' : ''}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <div className={panel('rules')}>
+        {roadmap.policy?.length > 0 && <PolicyWatch policy={roadmap.policy} />}
+        {roadmap.news?.length > 0 && (
+          <Fold title="In the news this month" note="Found live by Tavily. News is not the rule; check the official link.">
+            <LinkList items={roadmap.news.slice(0, 5)} dated />
+          </Fold>
+        )}
+        {roadmap.sources.length > 0 && (
+          <Fold title={`Sources (${roadmap.sources.length})`}>
+            <LinkList items={roadmap.sources} />
+          </Fold>
+        )}
+      </div>
 
       <p className="text-xs text-muted">
         {student
-          ? 'Bridgepath gives guidance, not legal or immigration advice. Rules change; confirm every step with your DSO, and talk to an immigration attorney for anything beyond OPT.'
-          : 'Bridgepath gives guidance, not legal advice. Rules change; always confirm with the official licensing board.'}
+          ? 'Guidance, not legal advice. Confirm every step with your DSO, and talk to an immigration attorney for anything beyond OPT.'
+          : 'Guidance, not legal advice. Always confirm with the official licensing board.'}
       </p>
     </div>
+  )
+}
+
+function StepCard({ step: s, n, index, done, onToggle, student }) {
+  const [open, setOpen] = useState(false)
+  const after = s.depends_on.filter((d) => index[d]).map((d) => index[d])
+  return (
+    <li className={`print-break rounded-2xl border bg-card transition ${done ? 'border-brand/30' : 'border-line hover:border-slate-300'}`}>
+      <div className="flex items-start gap-3 p-4">
+        <button type="button" onClick={onToggle} aria-pressed={done} title={done ? 'Mark as not done' : "I've done this"}
+          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-medium transition hover:scale-110 ${done ? 'bg-brand text-white' : 'border border-line text-muted hover:border-brand hover:text-brand'}`}>
+          {done ? '✓' : n}
+        </button>
+        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="min-w-0 flex-1 text-left">
+          <div className="flex items-start justify-between gap-2">
+            <h4 className={`min-w-0 font-medium ${done ? 'text-muted line-through decoration-brand/50' : ''}`}>{s.title}</h4>
+            <span className="no-print shrink-0 text-muted transition" style={{ transform: open ? 'rotate(180deg)' : 'none' }}>⌄</span>
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-muted">
+            <span>{s.cost_usd_max > 0 ? range(s.cost_usd_min, s.cost_usd_max, usd) : 'Free'}</span>
+            <span>{range(s.duration_weeks_min, s.duration_weeks_max)} wk</span>
+            {s.official ? <span className="text-brand">✓ {hostOf(s.source_url)}</span>
+              : s.kind === 'career' ? <span>career step</span>
+                : !s.verified && <span className="text-accent">no source</span>}
+          </div>
+        </button>
+      </div>
+      <div className={`${open ? '' : 'hidden print:block'} border-t border-line px-4 pb-4 pl-14 pt-3 text-sm`}>
+        <p className="text-muted">{s.description}</p>
+        {after.length > 0 && <p className="mt-2 text-xs text-muted">After step {after.join(', ')}</p>}
+        {s.documents.length > 0 && (
+          <ul className="mt-3 flex flex-wrap gap-1.5">
+            {s.documents.map((d) => <li key={d} className="rounded-md bg-paper px-2 py-1 text-xs">{d}</li>)}
+          </ul>
+        )}
+        {s.source_url && (
+          <a href={s.source_url} target="_blank" rel="noreferrer" className={`mt-3 inline-block text-xs font-medium hover:underline ${s.official ? 'text-brand' : 'text-accent'}`}>
+            {s.official ? 'Official source' : `Unofficial source; check with ${student ? 'your DSO' : 'the board'}`}: {hostOf(s.source_url)} ↗
+          </a>
+        )}
+      </div>
+    </li>
+  )
+}
+
+function Warnings({ warnings }) {
+  const [all, setAll] = useState(false)
+  const shown = all ? warnings : warnings.slice(0, 3)
+  return (
+    <section className="print-break rounded-2xl border border-amber-200 bg-accent-soft p-5">
+      <h3 className="text-sm font-semibold">Watch out for</h3>
+      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm">
+        {shown.map((w) => <li key={w}>{w}</li>)}
+      </ul>
+      {warnings.length > 3 && (
+        <button onClick={() => setAll(!all)} className="no-print mt-2 text-sm font-medium text-accent hover:underline">
+          {all ? 'Show less' : `Show ${warnings.length - 3} more`}
+        </button>
+      )}
+    </section>
   )
 }
 
@@ -207,103 +202,99 @@ function countdown(d) {
   const now = new Date()
   const end = d.end && new Date(d.end + 'T23:59:59')
   const start = d.start && new Date(d.start + 'T00:00:00')
-  if (end && end < now) return { text: 'Passed', tone: 'bg-line text-muted' }
+  if (end && end < now) return { text: 'Passed', tone: 'bg-paper text-muted' }
   if (start && start > now) {
     const days = Math.ceil((start - now) / DAY)
-    return { text: `Opens in ${days} day${days === 1 ? '' : 's'}`, tone: 'bg-brand-soft text-brand-dark' }
+    return { text: `in ${days} day${days === 1 ? '' : 's'}`, tone: 'bg-brand-soft text-brand-dark' }
   }
   if (end) {
     const days = Math.ceil((end - now) / DAY)
-    return { text: start ? `Open now · ${days} days left` : `In ${days} day${days === 1 ? '' : 's'}`, tone: 'bg-accent-soft text-accent' }
+    return { text: start ? `open · ${days} days left` : `in ${days} days`, tone: 'bg-accent-soft text-accent' }
   }
   return null
 }
 
 function Deadlines({ deadlines }) {
+  const dated = deadlines.filter((d) => d.start || d.end)
+  const rules = deadlines.filter((d) => !d.start && !d.end)
   return (
-    <section id="dates" className="print-break scroll-mt-20">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="mb-1 font-display text-xl">Your key dates</h3>
-          <p className="text-sm text-muted">Worked out from your program dates using the F-1 rules.</p>
-        </div>
-        {deadlines.some((d) => d.start || d.end) && (
+    <section className="print-break space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">Calculated from your program dates using the F-1 rules.</p>
+        {dated.length > 0 && (
           <button type="button" onClick={() => downloadIcs(deadlines)}
-            className="no-print rounded-full border border-line bg-card px-4 py-2 text-sm font-medium text-ink transition hover:-translate-y-0.5 hover:border-brand hover:text-brand">
-            📅 Add to my calendar
+            className="no-print rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium transition hover:border-brand hover:text-brand">
+            Add to calendar
           </button>
         )}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {deadlines.map((d, i) => {
+      <ol className="relative space-y-3 border-l border-line pl-5">
+        {dated.map((d) => {
           const c = countdown(d)
           return (
-            <div key={d.label} style={{ animationDelay: `${i * 80}ms` }}
-              className="fade-up rounded-xl border border-line bg-card p-4 shadow-sm transition hover:border-brand/50 hover:shadow-md">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h4 className="font-semibold">{d.label}</h4>
-                {c && <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${c.tone}`}>{c.text}</span>}
-              </div>
-              {(d.start || d.end) && (
-                <p className="mt-1 text-sm font-medium text-brand">
-                  {d.start && d.end ? `${fmtDate(d.start)} to ${fmtDate(d.end)}` : fmtDate(d.end || d.start)}
-                  {d.approximate && <span className="font-normal text-muted"> (usual dates; check USCIS)</span>}
-                </p>
-              )}
-              <p className="mt-2 text-sm leading-relaxed text-muted">{d.detail}</p>
-            </div>
+            <li key={d.label} className="relative">
+              <span className="absolute -left-[25px] top-1.5 h-2.5 w-2.5 rounded-full bg-brand ring-4 ring-paper" />
+              <details className="group rounded-2xl border border-line bg-card p-4">
+                <summary className="flex cursor-pointer list-none flex-wrap items-baseline justify-between gap-2">
+                  <span>
+                    <span className="font-medium">{d.label}</span>
+                    <span className="mt-0.5 block font-mono text-xs text-muted">
+                      {d.start && d.end ? `${fmtDate(d.start)} – ${fmtDate(d.end)}` : fmtDate(d.end || d.start)}
+                      {d.approximate && ' · usual dates'}
+                    </span>
+                  </span>
+                  {c && <span className={`rounded-full px-2.5 py-0.5 font-mono text-xs ${c.tone}`}>{c.text}</span>}
+                </summary>
+                <p className="mt-3 text-sm text-muted">{d.detail}</p>
+              </details>
+            </li>
           )
         })}
-      </div>
+      </ol>
+      {rules.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {rules.map((d) => (
+            <div key={d.label} className="rounded-2xl border border-line bg-card p-4">
+              <p className="text-sm font-medium">{d.label}</p>
+              <p className="mt-1 text-sm text-muted">{d.detail}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
 
-const WAGE_LEVELS = [
-  ['Level I', 'Entry level', 1],
-  ['Level II', 'Qualified', 2],
-  ['Level III', 'Experienced', 3],
-  ['Level IV', 'Fully competent', 4],
-]
-
 function H1BChances({ seasons }) {
   return (
-    <section id="h1b" className="print-break scroll-mt-20 rounded-2xl border border-line bg-card p-5 shadow-sm sm:p-6">
-      <h3 className="font-display text-xl">Your H-1B chances</h3>
-      <p className="mt-1 text-sm text-muted">
-        You can be entered in the H-1B lottery <strong className="text-ink">{seasons.length} time{seasons.length === 1 ? '' : 's'}</strong>{' '}
-        while your F-1 work time lasts, if you use every OPT extension you qualify for. Each March is a new try, and your employer does the registering.
-      </p>
+    <section className="print-break rounded-2xl border border-line bg-card p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 className="font-display text-lg font-semibold">H-1B lottery chances</h3>
+        <span className="font-display text-3xl font-semibold text-brand">{seasons.length}</span>
+      </div>
+      <p className="mt-1 text-sm text-muted">One try each March while your F-1 work time lasts. Your employer registers you.</p>
       <ol className="mt-4 flex flex-wrap gap-2">
         {seasons.map((s, i) => (
-          <li key={s.label} className={`rounded-xl px-3 py-2 text-sm ${i === 0 ? 'bg-brand text-white' : 'bg-brand-soft text-brand-dark'}`}>
-            <span className="font-semibold">{s.label}</span>
-            <span className={`block text-xs ${i === 0 ? 'text-white/80' : 'text-brand-dark/80'}`}>{s.note} · FY{s.fiscal_year}</span>
+          <li key={s.label} className={`rounded-lg px-3 py-1.5 font-mono text-xs ${i === 0 ? 'bg-ink text-white' : 'bg-paper text-ink'}`} title={s.note}>
+            {s.label}
           </li>
         ))}
       </ol>
-      <div className="mt-5">
-        <p className="text-sm font-medium">Higher pay means more entries in the lottery</p>
-        <p className="text-xs text-muted">Weighted selection by the job's wage level, in effect since the March 2026 season.</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {WAGE_LEVELS.map(([lvl, desc, n]) => (
-            <div key={lvl} className="rounded-xl border border-line p-3">
-              <p className="text-sm font-semibold">{lvl}</p>
-              <p className="text-xs text-muted">{desc}</p>
-              <p className="mt-2 flex gap-1" aria-label={`${n} entr${n === 1 ? 'y' : 'ies'}`}>
-                {[1, 2, 3, 4].map((k) => (
-                  <span key={k} className={`h-2.5 flex-1 rounded-full ${k <= n ? 'bg-brand' : 'bg-brand-soft'}`} />
-                ))}
-              </p>
-              <p className="mt-1 text-xs font-medium text-brand-dark">{n} entr{n === 1 ? 'y' : 'ies'}</p>
+      <p className="mt-5 text-sm">Higher wage level, more entries <span className="text-muted">(weighted lottery, in effect)</span></p>
+      <div className="mt-2 grid grid-cols-4 gap-2">
+        {[1, 2, 3, 4].map((n) => (
+          <div key={n} className="text-center">
+            <div className="flex h-12 items-end justify-center">
+              <div className="w-full rounded-md bg-brand" style={{ height: `${n * 25}%`, opacity: 0.4 + n * 0.15 }} />
             </div>
-          ))}
-        </div>
-        <a href="https://www.federalregister.gov/documents/2025/12/29/2025-23853/weighted-selection-process-for-registrants-and-petitioners-seeking-to-file-cap-subject-h-1b"
-          target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs font-medium text-brand hover:underline">
-          ✓ Official source: federalregister.gov
-        </a>
+            <p className="mt-1 font-mono text-[11px] text-muted">Level {['I', 'II', 'III', 'IV'][n - 1]} · {n}×</p>
+          </div>
+        ))}
       </div>
+      <a href="https://www.federalregister.gov/documents/2025/12/29/2025-23853/weighted-selection-process-for-registrants-and-petitioners-seeking-to-file-cap-subject-h-1b"
+        target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs font-medium text-brand hover:underline">
+        Official source: federalregister.gov ↗
+      </a>
     </section>
   )
 }
@@ -311,57 +302,69 @@ function H1BChances({ seasons }) {
 const STATUS_TONE = {
   'in effect': 'bg-brand text-white',
   proposed: 'bg-accent-soft text-accent',
-  'blocked by court': 'bg-line text-ink',
-  'struck down': 'bg-line text-muted line-through',
+  'blocked by court': 'bg-slate-200 text-ink',
+  'struck down': 'bg-slate-100 text-muted line-through',
 }
 
-function PolicyWatch({ policy, news }) {
+function PolicyWatch({ policy }) {
   return (
-    <section id="policy" className="print-break scroll-mt-20">
-      <h3 className="mb-1 font-display text-xl">Policy watch</h3>
-      <p className="mb-4 text-sm text-muted">Recent rule changes and where each one stands today, so you know what actually applies to you.</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <section className="print-break">
+      <p className="mb-3 text-sm text-muted">Recent changes and where each one stands today.</p>
+      <ul className="divide-y divide-line rounded-2xl border border-line bg-card">
         {policy.map((p) => (
-          <div key={p.title} className="rounded-xl border border-line bg-card p-4 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <h4 className="font-semibold leading-snug">{p.title}</h4>
-              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_TONE[p.status] || 'bg-line'}`}>{p.status[0].toUpperCase() + p.status.slice(1)}</span>
-            </div>
-            <p className="mt-1 text-xs text-muted">{p.date}</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{p.summary}</p>
-            <a href={p.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-medium text-brand hover:underline">
-              Source: {hostOf(p.source_url)}
-            </a>
-          </div>
+          <li key={p.title}>
+            <details className="group p-4">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+                <span className="text-sm font-medium">{p.title}</span>
+                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_TONE[p.status] || 'bg-paper'}`}>
+                  {p.status[0].toUpperCase() + p.status.slice(1)}
+                </span>
+              </summary>
+              <p className="mt-2 font-mono text-xs text-muted">{p.date}</p>
+              <p className="mt-1 text-sm text-muted">{p.summary}</p>
+              <a href={p.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-medium text-brand hover:underline">
+                {hostOf(p.source_url)} ↗
+              </a>
+            </details>
+          </li>
         ))}
-      </div>
-      {news.length > 0 && (
-        <div className="mt-5 rounded-xl border border-line bg-card p-4">
-          <p className="text-sm font-semibold">In the news this month</p>
-          <p className="text-xs text-muted">Found live by Tavily. News is not the rule; check the official link before acting.</p>
-          <ul className="mt-3 space-y-2 text-sm">
-            {news.slice(0, 5).map((n) => (
-              <li key={n.url}>
-                <a href={n.url} target="_blank" rel="noreferrer" className="text-brand hover:underline">{n.title || n.url}</a>
-                <span className="text-muted"> · {hostOf(n.url)}{n.published ? ` · ${new Date(n.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      </ul>
     </section>
+  )
+}
+
+function Fold({ title, note, children }) {
+  return (
+    <details className="print-break rounded-2xl border border-line bg-card p-4">
+      <summary className="cursor-pointer text-sm font-medium">{title}</summary>
+      {note && <p className="mt-1 text-xs text-muted">{note}</p>}
+      <div className="mt-3">{children}</div>
+    </details>
+  )
+}
+
+function LinkList({ items, dated }) {
+  return (
+    <ul className="space-y-1.5 text-sm">
+      {items.map((s) => (
+        <li key={s.url}>
+          <a href={s.url} target="_blank" rel="noreferrer" className="text-brand hover:underline">{s.title || s.url}</a>
+          <span className="font-mono text-xs text-muted">
+            {' '}· {hostOf(s.url)}
+            {dated && s.published ? ` · ${new Date(s.published).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+            {!dated && s.official ? ' · official' : ''}
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
 function Stat({ label, value, className = '' }) {
   return (
-    <div className={`rounded-xl bg-white/10 p-3 ${className}`}>
-      <dt className="text-xs text-white/75">{label}</dt>
-      <dd className="mt-0.5 font-semibold">{value}</dd>
+    <div className={`rounded-xl border border-white/10 bg-white/5 p-3 ${className}`}>
+      <dt className="font-mono text-[11px] uppercase tracking-wide text-slate-400">{label}</dt>
+      <dd className="mt-1 font-medium">{value}</dd>
     </div>
   )
-}
-
-function Chip({ children }) {
-  return <span className="rounded-full bg-brand-soft px-2.5 py-1 font-medium text-brand-dark">{children}</span>
 }

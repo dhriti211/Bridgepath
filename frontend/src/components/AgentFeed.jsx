@@ -6,10 +6,10 @@ const ORDER = {
   student: ['intake', 'dates', 'research', 'policy', 'synthesis', 'plan', 'verify'],
 }
 
-export default function AgentFeed({ mode = 'license', steps, sources, compact }) {
+export default function AgentFeed({ mode = 'license', steps, sources, compact, bare }) {
   return (
-    <div className="rounded-2xl border border-line bg-card p-5 shadow-sm">
-      <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted">How we built your plan</h3>
+    <div className={bare ? 'p-4' : 'rounded-2xl border border-line bg-card p-5'}>
+      {!bare && <h3 className="mb-4 font-mono text-xs uppercase tracking-wide text-muted">Agent at work</h3>}
       <ol className="space-y-3">
         {ORDER[mode].map((key) => {
           const s = steps[key]
@@ -22,7 +22,7 @@ export default function AgentFeed({ mode = 'license', steps, sources, compact })
                   <span className={`text-sm font-medium ${status === 'waiting' ? 'text-muted' : 'text-ink'}`}>
                     {STEP_LABELS[key]}
                   </span>
-                  <span className="rounded bg-paper px-1.5 py-0.5 text-[11px] text-muted">{STEP_MODELS[key]}</span>
+                  <span className="rounded bg-paper px-1.5 py-0.5 font-mono text-[11px] text-muted">{STEP_MODELS[key]}</span>
                 </div>
                 {s?.message && <p className="mt-0.5 text-sm text-muted">{s.message}</p>}
                 {key === 'research' && !compact && sources.length > 0 && (
