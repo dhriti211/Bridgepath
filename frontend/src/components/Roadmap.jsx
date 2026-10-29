@@ -220,11 +220,11 @@ function Deadlines({ deadlines }) {
   return (
     <section className="print-break space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">Calculated from your program dates using the F-1 rules.</p>
+        <p className="text-sm text-muted">Calculated from your program dates using the F-1 rules. Your calendar reminds you a week and a day before each one.</p>
         {dated.length > 0 && (
           <button type="button" onClick={() => downloadIcs(deadlines)}
             className="no-print rounded-lg border border-line bg-card px-3 py-2 text-sm font-medium transition hover:border-brand hover:text-brand">
-            Add to calendar
+            Add to calendar with reminders
           </button>
         )}
       </div>

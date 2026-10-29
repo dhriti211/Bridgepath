@@ -18,6 +18,10 @@ function event(uid, date, summary, description) {
     `DTEND;VALUE=DATE:${ymd(nextDay(date))}`,
     `SUMMARY:${esc(summary)}`,
     `DESCRIPTION:${esc(description)}`,
+    // Reminders a week before and the day before (calendars count from midnight of the event day)
+    ...['-P7D', '-P1D'].flatMap((when) => [
+      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(summary)}`, `TRIGGER:${when}`, 'END:VALARM',
+    ]),
     'END:VEVENT',
   ].join('\r\n')
 }
