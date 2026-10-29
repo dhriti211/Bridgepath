@@ -14,7 +14,7 @@ Bridgepath also helps professionals trained abroad (nurses, engineers and K-12 t
 
 1. **Tell it where you are**: degree level, major, STEM or not, program end date, OPT dates if you have them, the job you want, and optionally your resume.
 2. **Pick a goal**: the agent reads your background and suggests three realistic, different goals (for example big tech, a cap-exempt university lab, or a stretch path toward O-1A). Pick one or type your own.
-3. **Get your key dates**: when to ask your DSO, your OPT filing window, grace period, STEM OPT window and H-1B season, calculated from your own dates using the F-1 rules, with a live countdown and an **Add to my calendar** (.ics) button.
+3. **Get your key dates**: when to ask your DSO, your OPT filing window, grace period, STEM OPT window and H-1B season, calculated from your own dates using the F-1 rules, with a live countdown and an **Add to calendar** (.ics) button that sets reminders a week and a day before each date.
 4. **See your H-1B chances**: how many March lottery seasons you get while your F-1 work time lasts, and how the wage-level weighted lottery changes your odds.
 5. **Get your roadmap**: ordered career and immigration steps, each with cost, time, documents and a link to USCIS or another official source, plus the kinds of employers to target.
 6. **Policy watch**: each recent rule change (H-1B fees, OPT fees, duration of status) with its real status today (in effect, proposed, blocked by a court or struck down), an official link, and this month's news found live by Tavily.
